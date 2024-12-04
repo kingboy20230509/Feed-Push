@@ -26,7 +26,7 @@ pip install python-telegram-bot[ext,job-queue] feedparser requests
 
 # 下载 Telegram RSS Bot 脚本
 echo "Downloading the Telegram RSS bot script..."
-curl -o telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/RSS/refs/heads/main/telegram_rss_bot.py
+curl -o telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/telegram_rss_bot.py
 
 # 提示用户输入配置
 echo "Please enter the following information to configure the bot script:"
