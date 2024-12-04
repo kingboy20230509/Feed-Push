@@ -1,48 +1,58 @@
 #!/bin/bash
 
-# 更新系统
-echo "Updating system..."
-sudo apt update && sudo apt upgrade -y
+# 检查是否为 root 用户
+if [ "$(id -u)" != "0" ]; then
+    echo "请使用 sudo 或 root 权限运行此脚本！"
+    exit 1
+fi
 
-# 安装 Python 和工具
-echo "Installing Python and required packages..."
-sudo apt install python3 python3-pip python3-venv curl -y
+# 更新系统
+echo "更新系统..."
+apt update && apt upgrade -y
+
+# 安装 Python 及工具
+echo "安装 Python3 和 pip..."
+apt install python3 python3-pip python3-venv wget -y
 
 # 创建项目目录
-echo "Creating project directory..."
+echo "创建项目目录 /home/Python_project/telegram_rss_bot..."
 mkdir -p /home/Python_project/telegram_rss_bot && cd /home/Python_project/telegram_rss_bot
 
 # 创建虚拟环境
-echo "Setting up virtual environment..."
+echo "创建 Python 虚拟环境..."
 python3 -m venv venv
 
 # 激活虚拟环境
-echo "Activating virtual environment..."
 source venv/bin/activate
 
 # 安装依赖
-echo "Installing required Python packages..."
+echo "安装所需的 Python 库..."
 pip install python-telegram-bot[ext,job-queue] feedparser requests
 
-# 下载 Telegram RSS Bot 脚本
-echo "Downloading the Telegram RSS bot script..."
-curl -o telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/telegram_rss_bot.py
+# 下载 Python 脚本
+echo "下载 telegram_rss_bot.py 脚本..."
+wget -O telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/telegram_rss_bot.py
 
-# 提示用户输入配置
-echo "Please enter the following information to configure the bot script:"
-read -p "Enter your Telegram Bot Token: " TELEGRAM_BOT_TOKEN
-read -p "Enter your Telegram user ID (admin_id): " ROOT_ID
-read -p "Enter your target Telegram group ID (must be a negative number): " TARGET_GROUP_ID
+# 获取用户输入
+echo "请输入 Telegram Bot Token:"
+read TELEGRAM_BOT_TOKEN
+echo "请输入管理员的 Telegram 用户 ID (ROOT_ID):"
+read ROOT_ID
+echo "请输入目标群组 ID (TARGET_GROUP_ID，必须为负数):"
+read TARGET_GROUP_ID
+echo "请输入更新间隔时间（秒，默认为 300）："
+read INTERVAL
+INTERVAL=${INTERVAL:-300}  # 默认值为 300
 
-# 替换脚本中的占位符
-echo "Configuring the Telegram bot script..."
-sed -i "s|TELEGRAM_BOT_TOKEN = \"Telegram_Bot_Token\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|" telegram_rss_bot.py
-sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|" telegram_rss_bot.py
-sed -i "s|TARGET_GROUP_ID = group_id|TARGET_GROUP_ID = $TARGET_GROUP_ID|" telegram_rss_bot.py
+# 替换 Python 脚本中的占位符
+sed -i "s|TELEGRAM_BOT_TOKEN = \"\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
+sed -i "s|ROOT_ID = \"\"|ROOT_ID = \"$ROOT_ID\"|g" telegram_rss_bot.py
+sed -i "s|TARGET_GROUP_ID = \"\"|TARGET_GROUP_ID = \"$TARGET_GROUP_ID\"|g" telegram_rss_bot.py
+sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
 
 # 创建 systemd 服务文件
-echo "Creating systemd service for the bot..."
-sudo bash -c 'cat > /etc/systemd/system/telegram_rss_bot.service <<EOF
+echo "创建 systemd 服务文件..."
+cat << EOF > /etc/systemd/system/telegram_rss_bot.service
 [Unit]
 Description=Telegram RSS Bot
 After=network.target
@@ -57,22 +67,17 @@ Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
-EOF'
+EOF
 
 # 重新加载 systemd 配置
-echo "Reloading systemd configuration..."
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
-# 启动服务
-echo "Starting the bot service..."
-sudo systemctl start telegram_rss_bot
+# 启动服务并设置开机启动
+echo "启动 Telegram RSS Bot 服务..."
+systemctl start telegram_rss_bot
+systemctl enable telegram_rss_bot
 
-# 设置开机启动
-echo "Enabling the service to start on boot..."
-sudo systemctl enable telegram_rss_bot
+# 显示服务状态
+systemctl status telegram_rss_bot
 
-# 输出服务状态
-echo "Checking the service status..."
-sudo systemctl status telegram_rss_bot
-
-echo "Installation complete! The Telegram RSS bot should now be running."
+echo "部署完成，Bot 应该已启动并运行。"
