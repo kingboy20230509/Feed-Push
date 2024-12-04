@@ -63,7 +63,7 @@ sed -i "s|TELEGRAM_BOT_TOKEN = \"Telegram_Bot_Token\"|TELEGRAM_BOT_TOKEN = \"$TE
 sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
 sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
 sed -i "s|ENABLE_WHITELIST = \"\"|ENABLE_WHITELIST = \"$ENABLE_WHITELIST\"|g" telegram_rss_bot.py
-sed -i "s|WHITELIST_GROUP_ID = group_id|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
+sed -i "s|WHITELIST_GROUP_ID = -123456|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
 
 
 # 创建 systemd 服务文件
