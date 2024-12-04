@@ -13,7 +13,7 @@ ALLOWED_USERS_FILE = "./allowed_users.json"  # 存储白名单的文件
 WHITELIST_STATUS_FILE = "./whitelist_status.json"  # 白名单模式状态文件
 TELEGRAM_BOT_TOKEN = "Telegram_Bot_Token"  # 替换为你的 Telegram Bot Token
 ROOT_ID = admin_id  # 替换为管理员的 Telegram 用户 ID
-TARGET_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
+WHITELIST_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
 
 
 # 加载白名单
@@ -43,7 +43,7 @@ def is_allowed_user(user_id):
 # 检查用户是否在特定群组中
 async def is_user_in_group(user_id, context):
     try:
-        member = await context.bot.get_chat_member(TARGET_GROUP_ID, user_id)
+        member = await context.bot.get_chat_member(WHITELIST_GROUP_ID, user_id)
         return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         print(f"Error checking if user {user_id} is in group: {e}")
