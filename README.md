@@ -58,3 +58,6 @@ sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bo
 ```
 sudo systemctl daemon-reload
 ```
+## License
+This project is licensed under the GNU General Public License v3.0.  
+See the [LICENSE](LICENSE) file for details.
