@@ -85,7 +85,7 @@ while true; do
 
         # 创建 systemd 服务文件
         echo "创建 systemd 服务文件..."
-        cat << EOF > /etc/systemd/system/telegram_rss_bot.service
+        cat <<EOF > /etc/systemd/system/telegram_rss_bot.service
 [Unit]
 Description=Telegram RSS Bot
 After=network.target
@@ -101,6 +101,7 @@ Environment=PYTHONUNBUFFERED=1
 [Install]
 WantedBy=multi-user.target
 EOF
+
 
         # 重新加载 systemd 配置
         systemctl daemon-reload
