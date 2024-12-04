@@ -11,7 +11,7 @@ curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/b
 - **管理员 ID**  
     使用 @userinfobot 获取你的 Telegram 用户 ID，填入脚本中的 `ROOT_ID`。
 - **群组 ID**  
-    用于验证用户是否已加入指定群组，开启进群验证功能时，需设置群组 ID 通过 `group_verify` 控制。
+    用于验证用户是否已加入指定群组，开启进群验证功能时，需设置群组 ID 通过 `/group_verify` 控制。
   
 ### 基础指令
 - **`/start`**：注册并开始使用。
