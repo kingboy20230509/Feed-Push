@@ -18,6 +18,39 @@ curl -sS -O https://github.com/ecouus/Feed-Push/raw/main/allinone.sh && sudo chm
 - 目标群组 ID
 目标群组 ID 验证用户是否进入指定群组,进群才能使用,此功能可以通过/whitelist off关闭
 
+### **服务管理命令**
+- **启动服务**：
+```
+sudo systemctl start telegram_rss_bot
+```
+- **停止服务**：
+```
+sudo systemctl stop telegram_rss_bot
+```
+- **重启服务**：
+```
+sudo systemctl restart telegram_rss_bot
+```
+- **查看服务状态**：
+```
+sudo systemctl status telegram_rss_bot
+```
+- **实时查看服务日志**：
+```
+journalctl -u telegram_rss_bot -f
+```
+---
+
+**修改脚本后**
+```
+sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bot
+```
+
+
+若修改了.service文件则需运行
+```
+sudo systemctl daemon-reload
+
 
 ### 基础指令
 ```
