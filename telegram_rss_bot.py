@@ -12,7 +12,7 @@ USER_DATA_FILE = "./user_data.json"  # 存储用户规则和 RSS 源
 ALLOWED_USERS_FILE = "./allowed_users.json"  # 存储白名单的文件
 WHITELIST_STATUS_FILE = "./whitelist_status.json"  # 白名单模式状态文件
 TELEGRAM_BOT_TOKEN = "Telegram_Bot_Token"  # 替换为你的 Telegram Bot Token
-ROOT_ID = admin_id  # 替换为管理员的 Telegram 用户 ID
+ROOT_ID = ROOT_ID  # 替换为管理员的 Telegram 用户 ID
 TARGET_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
 
 
