@@ -1,5 +1,5 @@
 # Feed-Push: Telegram RSS Bot
-Feed-Push可以将你关注的网站或博客的最新更新自动通过Bot进行推送，实现信息的即时传递。
+Feed-Push可以将你关注的网站或博客的最新更新自动通过Bot进行推送，实现信息的即时传递。  
 快速安装和配置 Telegram RSS Bot
 ```
 curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
