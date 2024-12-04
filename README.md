@@ -7,18 +7,28 @@ curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/b
 ```
 **输入/help获取指令帮助！**  
 **默认抓取间隔时间为300s，时间过短可能会触发反爬机制导致ip被相应源封禁。默认关闭白名单模式和进群验证。**
-- Bot Token  
-在 BotFather 上创建一个新的 Telegram Bot，并获取 Bot Token。
-打开 Telegram，搜索并启动 BotFather。
-输入 /newbot 并按照提示操作。
-创建完毕后，你将收到一个 Token，记下它，用于配置脚本中的 TELEGRAM_BOT_TOKEN。
-- 管理员 ID  
-管理员 ID 是用于管理机器人的 Telegram 用户 ID。你可以通过以下方法获取你的 ID：
-搜索并启动 userinfobot。
-发送任何消息后，机器人会回复你的 Telegram 用户 ID。
-将该 ID 填入脚本中的 ROOT_ID。
-- 群组 ID  
-群组 ID 验证用户是否进入指定群组,进群才能使用,此功能可以通过/whitelist off关闭
+- **Bot Token**  
+    在 Telegram 上通过 BotFather 创建新 Bot，输入 `/newbot` 后按提示操作，获得 Token，并填入脚本中的 `TELEGRAM_BOT_TOKEN`。
+- **管理员 ID**  
+    使用 @userinfobot 获取你的 Telegram 用户 ID，填入脚本中的 `ROOT_ID`。
+- **群组 ID**  
+    用于验证用户是否已加入指定群组，开启进群验证功能时，需设置群组 ID 通过 `group_verify` 控制。
+  
+### 基础指令
+- **`/start`**：注册并开始使用。
+- **`/help`**：查看帮助信息。
+- **`/add_rss <URL>`**：添加 RSS 订阅源。
+- **`/list_rss`**：查看已添加的 RSS 源。
+- **`/list <编号>`**：查看指定 RSS 源的规则和关键词。
+- **`/add <编号> <关键词>`**：为指定 RSS 源添加关键词或规则。
+- **`/rm <编号> <关键词编号>`**：删除指定 RSS 源的关键词。
+- **`/rm_rss <编号>`**：删除指定的 RSS 源。
+
+
+## 管理员命令
+- **`/add_user <用户ID>`**：将用户添加到白名单。
+- **`/whitelist <on/off>`**：开启或关闭白名单模式。
+- **`/group_verify <on/off>`**：开启或关闭进群验证。  
 
 ### **服务管理命令**
 - **启动服务**：
@@ -54,17 +64,3 @@ sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bo
 sudo systemctl daemon-reload
 ```
 
-### 基础指令
-- **`/start`**：注册并开始使用。
-- **`/add_rss <URL>`**：添加 RSS 订阅源。
-- **`/list_rss`**：查看已添加的 RSS 源。
-- **`/list <编号>`**：查看指定 RSS 源的规则和关键词。
-- **`/add <编号> <关键词>`**：为指定 RSS 源添加关键词或规则。
-- **`/rm <编号> <关键词编号>`**：删除指定 RSS 源的关键词。
-- **`/rm_rss <编号>`**：删除指定的 RSS 源。
-- **`/help`**：查看帮助信息。
-
-## 管理员命令
-- **`/add_user <用户ID>`**：将用户添加到白名单。
-- **`/whitelist <on/off>`**：开启或关闭白名单模式。
-- **`/group_verify <on/off>`**：开启或关闭进群验证。
