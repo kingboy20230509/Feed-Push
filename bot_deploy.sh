@@ -144,6 +144,18 @@ EOF
         read WHITELIST_GROUP_ID
         sed -i "s|WHITELIST_GROUP_ID = .*|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" /home/Python_project/telegram_rss_bot/telegram_rss_bot.py
         ;;
+      5)
+        # 读取 Python 脚本中的 ENABLE_GROUP_VERIFY 配置
+        ENABLE_GROUP_VERIFY=$(python3 -c "import telegram_rss_bot; print(telegram_rss_bot.ENABLE_GROUP_VERIFY)")
+        echo "当前进群验证启用状态：$ENABLE_GROUP_VERIFY"
+        # 修改 ENABLE_GROUP_VERIFY 状态
+        echo "请输入新的进群验证启用状态 (True/False):"
+        read NEW_ENABLE_GROUP_VERIFY
+        # 更新 Python 脚本中的配置
+        sed -i "s|ENABLE_GROUP_VERIFY = .*|ENABLE_GROUP_VERIFY = $NEW_ENABLE_GROUP_VERIFY|g" /home/Python_project/telegram_rss_bot/telegram_rss_bot.py
+
+        ;;
+
       *)
         echo "无效的操作选项!"
         ;;
