@@ -63,12 +63,12 @@ case $action in
         # 如果没有输入群组ID，默认设置为 -123456
         WHITELIST_GROUP_ID="-123456"
         # 关闭白名单
-        ENABLE_WHITELIST="False"
+        ENABLE_GROUP_VERIFY=False
         # 保存白名单状态为 False
         python3 -c "import json; json.dump({'whitelist_enabled': False}, open('whitelist_status.json', 'w'))"
     else
         # 如果输入了群组ID，开启白名单
-        ENABLE_WHITELIST="True"
+        ENABLE_GROUP_VERIFY=True
         # 保存白名单状态为 True
         python3 -c "import json; json.dump({'whitelist_enabled': True}, open('whitelist_status.json', 'w'))"
     fi
@@ -77,7 +77,7 @@ case $action in
     sed -i "s|TELEGRAM_BOT_TOKEN = \"Telegram_Bot_Token\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
     sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
     sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
-    sed -i "s|ENABLE_WHITELIST = \"\"|ENABLE_WHITELIST = \"$ENABLE_WHITELIST\"|g" telegram_rss_bot.py
+    sed -i "s|ENABLE_GROUP_VERIFY = False|ENABLE_GROUP_VERIFY = $ENABLE_GROUP_VERIFY|g" telegram_rss_bot.py
     sed -i "s|WHITELIST_GROUP_ID = group_id|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
 
     # 创建 systemd 服务文件
