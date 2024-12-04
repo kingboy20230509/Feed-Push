@@ -50,7 +50,7 @@ sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bo
 若修改了.service文件则需运行
 ```
 sudo systemctl daemon-reload
-
+```
 
 ### 基础指令
 ```
