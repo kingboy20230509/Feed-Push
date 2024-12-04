@@ -4,7 +4,6 @@
 while true; do
     clear
     echo "请选择操作:"
-    echo -e "\033[92mAuthor：Rational\033[0m"
     echo "1. 安装脚本"
     echo "2. 管理相关配置"
     echo "3. 卸载脚本"
