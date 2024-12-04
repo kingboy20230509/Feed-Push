@@ -15,7 +15,7 @@ TELEGRAM_BOT_TOKEN = "Telegram_Bot_Token"  # 替换为你的 Telegram Bot Token
 ROOT_ID = admin_id  # 替换为管理员的 Telegram 用户 ID
 WHITELIST_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
 
-ENABLE_GROUP_VERIFY = True  # 控制是否开启进群验证
+ENABLE_GROUP_VERIFY = False  # 控制是否开启进群验证
 
 # 加载白名单
 def load_allowed_users():
