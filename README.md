@@ -11,7 +11,7 @@ curl -sS -O https://github.com/ecouus/Feed-Push/raw/main/allinone.sh && sudo chm
 输入 /newbot 并按照提示操作。
 创建完毕后，你将收到一个 Token，记下它，用于配置脚本中的 TELEGRAM_BOT_TOKEN。
 - 管理员 ID
-管理员 ID 是你用于管理机器人的 Telegram 用户 ID。你可以通过以下方法获取你的 ID：
+管理员 ID 是用于管理机器人的 Telegram 用户 ID。你可以通过以下方法获取你的 ID：
 搜索并启动 userinfobot。
 发送任何消息后，机器人会回复你的 Telegram 用户 ID。
 将该 ID 填入脚本中的 ROOT_ID。
