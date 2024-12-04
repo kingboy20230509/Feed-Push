@@ -15,6 +15,7 @@ TELEGRAM_BOT_TOKEN = "Telegram_Bot_Token"  # 替换为你的 Telegram Bot Token
 ROOT_ID = admin_id  # 替换为管理员的 Telegram 用户 ID
 WHITELIST_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
 
+ENABLE_GROUP_VERIFY = True  # 控制是否开启进群验证
 
 # 加载白名单
 def load_allowed_users():
@@ -42,13 +43,37 @@ def is_allowed_user(user_id):
 
 # 检查用户是否在特定群组中
 async def is_user_in_group(user_id, context):
+    # 如果白名单已关闭（WHITELIST_GROUP_ID = false），直接返回 True
+    if WHITELIST_GROUP_ID == "false":
+        return True
+    
+    # 如果进群验证关闭，直接返回 True
+    if not ENABLE_GROUP_VERIFY:
+        return True
+        
     try:
+        # 当 WHITELIST_GROUP_ID 为具体群组 ID 且开启进群验证时，检查用户是否在群组中
         member = await context.bot.get_chat_member(WHITELIST_GROUP_ID, user_id)
         return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         print(f"Error checking if user {user_id} is in group: {e}")
         return False
 
+# 添加切换进群验证的命令处理函数
+async def toggle_group_verify(update, context):
+    user_id = update.effective_user.id
+    if user_id != ROOT_ID:
+        await update.message.reply_text("只有管理员可以操作进群验证开关。")
+        return
+
+    if len(context.args) < 1 or context.args[0].lower() not in ["on", "off"]:
+        await update.message.reply_text("请提供有效参数：/group_verify on 或 /group_verify off")
+        return
+
+    global ENABLE_GROUP_VERIFY
+    ENABLE_GROUP_VERIFY = context.args[0].lower() == "on"
+    status_text = "开启" if ENABLE_GROUP_VERIFY else "关闭"
+    await update.message.reply_text(f"进群验证已{status_text}。")
 
 # 白名单模式状态文件加载与保存
 def load_whitelist_status():
@@ -554,6 +579,7 @@ async def help_command(update, context):
         "  /add 1 +A-B - 添加包含'A'但不包含'B'的关键词\n"
         "/rm - 从指定的 RSS 源移除关键词\n"
         "/rm_rss - 删除指定的 RSS 源\n"
+        "/group_verify - 开启或关闭进群验证 (仅管理员可用)\n"
         "/help - 查看帮助信息\n"
         "请依照指令格式进行操作，享受我们的服务！"
     )
@@ -573,6 +599,7 @@ def main():
     application.add_handler(CommandHandler("rm_rss", rm_rss))
     application.add_handler(CommandHandler("add_user", add_user))
     application.add_handler(CommandHandler("whitelist", toggle_whitelist))
+    application.add_handler(CommandHandler("group_verify", toggle_group_verify))  # 添加新的命令处理器
     application.add_handler(CommandHandler("help", help_command))
 
     application.job_queue.run_repeating(check_new_posts, interval=300, first=0)
