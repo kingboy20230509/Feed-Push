@@ -5,8 +5,8 @@ Feed-Push 是一个用于将 RSS 源推送到 Telegram 群组或私人聊天的�
 ```
 curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
 ```
-**输入/help获取指令帮助！**
-**默认抓取间隔时间为300s，时间过短可能会触发反爬机制导致ip被相应源封禁。**
+**输入/help获取指令帮助！**  
+**默认抓取间隔时间为300s，时间过短可能会触发反爬机制导致ip被相应源封禁。默认关闭白名单模式和进群验证。**
 - Bot Token  
 在 BotFather 上创建一个新的 Telegram Bot，并获取 Bot Token。
 打开 Telegram，搜索并启动 BotFather。
