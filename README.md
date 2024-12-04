@@ -1,4 +1,4 @@
-#Feed-Push: Telegram RSS Bot
+# Feed-Push: Telegram RSS Bot
 Feed-Push 是一个用于将 RSS 源推送到 Telegram 群组或私人聊天的机器人。通过这个工具，你可以将你关注的网站或博客的最新更新自动推送到 Telegram 群组，实现信息的即时传递。
 运行一键安装脚本
 快速安装和配置 Telegram RSS Bot
