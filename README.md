@@ -18,8 +18,8 @@ curl -sS -O https://github.com/ecouus/RSS/raw/main/allinone.sh && sudo chmod +x 
 - 目标群组 ID
 目标群组 ID 验证用户是否进入指定群组,进群才能使用,此功能可以通过/whitelist off关闭
 
-# RSS
-基础指令
+
+### 基础指令
 /start
 
 功能：注册用户，并初始化用户数据（关键词列表、逻辑规则、RSS 源列表）。
