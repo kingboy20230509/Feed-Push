@@ -116,7 +116,7 @@ def save_user_data(user_data):
 async def start(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -137,7 +137,7 @@ async def start(update, context):
 async def add_rss(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -180,7 +180,7 @@ async def add_rss(update, context):
 async def list_rss(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis ")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis ")
         return
 
     if not is_allowed_user(user_id):
@@ -204,7 +204,7 @@ async def list_rss(update, context):
 async def list_source(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -264,7 +264,7 @@ def create_regex_pattern(pattern_str):
 async def add(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -325,7 +325,7 @@ async def add(update, context):
 async def rm(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -419,7 +419,7 @@ async def rm(update, context):
 async def rm_rss(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -559,7 +559,7 @@ async def toggle_whitelist(update, context):
 async def help_command(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
-        await update.message.reply_text("抱歉，您需要加入我们有的群组才可以使用此Bot：https://t.me/youdaolis")
+        await update.message.reply_text("官方群组：https://t.me/youdaolis")
         return
 
     if not is_allowed_user(user_id):
@@ -569,6 +569,7 @@ async def help_command(update, context):
     help_text = (
         "欢迎使用我们的 Telegram Bot！以下是可用命令的列表：\n"
         "/start - 注册与启动服务\n"
+        "/help - 查看帮助信息\n"
         "/add_rss - 添加一个新的 RSS 源\n"
         "/list_rss - 列出所有已添加的 RSS 源\n"
         "/list - 查看特定 RSS 源的详细信息\n"
@@ -579,8 +580,12 @@ async def help_command(update, context):
         "  /add 1 +A-B - 添加包含'A'但不包含'B'的关键词\n"
         "/rm - 从指定的 RSS 源移除关键词\n"
         "/rm_rss - 删除指定的 RSS 源\n"
-        "/group_verify - 开启或关闭进群验证 (仅管理员可用)\n"
-        "/help - 查看帮助信息\n"
+        " \n"
+        "管理员命令\n"
+        "/add_user <用户ID> - 将用户添加到白名单(仅管理员可用)\n"
+        "/group_verify <on/off> - 开启或关闭进群验证 (仅管理员可用)\n"
+        "/whitelist <on/off> - 开启或关闭白名单模式(仅管理员可用)\n"
+
         "请依照指令格式进行操作，享受我们的服务！"
     )
 
