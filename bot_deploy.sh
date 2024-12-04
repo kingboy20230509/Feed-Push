@@ -34,12 +34,10 @@ echo "下载 telegram_rss_bot.py 脚本..."
 wget -O telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/telegram_rss_bot.py
 
 # 获取用户输入
-echo "请输入 Telegram Bot Token:"
+echo "请输入 Telegram Bot Token（通过@BotFather创建）:"
 read TELEGRAM_BOT_TOKEN
-echo "请输入管理员的 Telegram 用户 ID (ROOT_ID):"
+echo "请输入管理员的 Telegram 用户 ID (可通过@userinfobot获取):"
 read ROOT_ID
-echo "请输入目标群组 ID (TARGET_GROUP_ID，必须为负数):"
-read TARGET_GROUP_ID
 echo "请输入更新间隔时间（秒，默认为 300）："
 read INTERVAL
 INTERVAL=${INTERVAL:-300}  # 默认值为 300
@@ -59,7 +57,6 @@ fi
 # 替换 Python 脚本中的占位符
 sed -i "s|TELEGRAM_BOT_TOKEN = \"\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
 sed -i "s|ROOT_ID = \"\"|ROOT_ID = \"$ROOT_ID\"|g" telegram_rss_bot.py
-sed -i "s|TARGET_GROUP_ID = \"\"|TARGET_GROUP_ID = \"$TARGET_GROUP_ID\"|g" telegram_rss_bot.py
 sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
 sed -i "s|ENABLE_WHITELIST = \"\"|ENABLE_WHITELIST = \"$ENABLE_WHITELIST\"|g" telegram_rss_bot.py
 sed -i "s|WHITELIST_GROUP_ID = \"\"|WHITELIST_GROUP_ID = \"$WHITELIST_GROUP_ID\"|g" telegram_rss_bot.py
