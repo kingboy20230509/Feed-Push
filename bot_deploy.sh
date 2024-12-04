@@ -44,11 +44,25 @@ echo "请输入更新间隔时间（秒，默认为 300）："
 read INTERVAL
 INTERVAL=${INTERVAL:-300}  # 默认值为 300
 
+# 询问是否启用白名单
+echo "请输入白名单群组 ID（如果不启用白名单，直接回车）："
+read WHITELIST_GROUP_ID
+
+if [ -z "$WHITELIST_GROUP_ID" ]; then
+    # 如果没有输入群组ID，关闭白名单
+    ENABLE_WHITELIST="False"
+else
+    # 如果输入了群组ID，开启白名单
+    ENABLE_WHITELIST="True"
+fi
+
 # 替换 Python 脚本中的占位符
 sed -i "s|TELEGRAM_BOT_TOKEN = \"\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
 sed -i "s|ROOT_ID = \"\"|ROOT_ID = \"$ROOT_ID\"|g" telegram_rss_bot.py
 sed -i "s|TARGET_GROUP_ID = \"\"|TARGET_GROUP_ID = \"$TARGET_GROUP_ID\"|g" telegram_rss_bot.py
 sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
+sed -i "s|ENABLE_WHITELIST = \"\"|ENABLE_WHITELIST = \"$ENABLE_WHITELIST\"|g" telegram_rss_bot.py
+sed -i "s|WHITELIST_GROUP_ID = \"\"|WHITELIST_GROUP_ID = \"$WHITELIST_GROUP_ID\"|g" telegram_rss_bot.py
 
 # 创建 systemd 服务文件
 echo "创建 systemd 服务文件..."
