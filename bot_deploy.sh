@@ -54,11 +54,11 @@ case $action in
     echo "请输入更新间隔时间（秒，默认为 300）："
     read INTERVAL
     INTERVAL=${INTERVAL:-300}  # 默认值为 300
-
+    
     # 询问是否启用白名单
     echo "请输入白名单群组 ID（如果不启用白名单，直接回车）："
     read WHITELIST_GROUP_ID
-
+    
     if [ -z "$WHITELIST_GROUP_ID" ]; then
         # 如果没有输入群组ID，默认设置为 -123456
         WHITELIST_GROUP_ID="-123456"
@@ -72,7 +72,7 @@ case $action in
         # 保存白名单状态为 True
         python3 -c "import json; json.dump({'whitelist_enabled': True}, open('whitelist_status.json', 'w'))"
     fi
-
+    
     # 替换 Python 脚本中的占位符
     sed -i "s|TELEGRAM_BOT_TOKEN = \"Telegram_Bot_Token\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
     sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
