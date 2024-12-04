@@ -1,19 +1,21 @@
-Feed-Push: Telegram RSS Bot
+#Feed-Push: Telegram RSS Bot
 Feed-Push 是一个用于将 RSS 源推送到 Telegram 群组或私人聊天的机器人。通过这个工具，你可以将你关注的网站或博客的最新更新自动推送到 Telegram 群组，实现信息的即时传递。
 运行一键安装脚本
-为了快速安装和配置 Telegram RSS Bot，您只需运行以下命令：
+快速安装和配置 Telegram RSS Bot
+```
 curl -sS -O https://github.com/ecouus/RSS/raw/main/allinone.sh && sudo chmod +x allinone.sh && ./allinone
-Bot Token
+```
+- Bot Token
 在 BotFather 上创建一个新的 Telegram Bot，并获取 Bot Token。
 打开 Telegram，搜索并启动 BotFather。
 输入 /newbot 并按照提示操作。
 创建完毕后，你将收到一个 Token，记下它，用于配置脚本中的 TELEGRAM_BOT_TOKEN。
-管理员 ID
+- 管理员 ID
 管理员 ID 是你用于管理机器人的 Telegram 用户 ID。你可以通过以下方法获取你的 ID：
 搜索并启动 userinfobot。
 发送任何消息后，机器人会回复你的 Telegram 用户 ID。
 将该 ID 填入脚本中的 ROOT_ID。
-目标群组 ID
+- 目标群组 ID
 目标群组 ID 验证用户是否进入指定群组,进群才能使用,此功能可以通过/whitelist off关闭
 
 # RSS
