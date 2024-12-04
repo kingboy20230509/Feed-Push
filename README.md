@@ -20,6 +20,7 @@ curl -sS -O https://github.com/ecouus/Feed-Push/raw/main/allinone.sh && sudo chm
 
 
 ### 基础指令
+```
 /start
 
 功能：注册用户，并初始化用户数据（关键词列表、逻辑规则、RSS 源列表）。
@@ -70,3 +71,4 @@ curl -sS -O https://github.com/ecouus/Feed-Push/raw/main/allinone.sh && sudo chm
 
 功能：列出所有已添加到白名单的用户 ID。
 用法：直接发送 /list_users。
+```
