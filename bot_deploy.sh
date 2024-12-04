@@ -3,6 +3,8 @@
 # 主菜单
 while true; do
     clear
+    echo -e "\033[92mRSS推送机器人\033[0m"
+    echo -e "\033[92mAuthor：Rational\033[0m"
     echo "请选择操作:"
     echo "1. 安装脚本"
     echo "2. 管理相关配置"
