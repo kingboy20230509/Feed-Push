@@ -52,21 +52,25 @@ async def is_user_in_group(user_id, context):
 
 # 白名单模式状态文件加载与保存
 def load_whitelist_status():
+    # 检查文件是否存在
     if os.path.exists(WHITELIST_STATUS_FILE):
         with open(WHITELIST_STATUS_FILE, "r") as f:
             try:
-                return json.load(f).get("whitelist_enabled", True)
+                # 尝试解析 JSON 内容并返回白名单启用状态，默认为 False
+                return json.load(f).get("whitelist_enabled", False)
             except json.JSONDecodeError:
-                return True
-    return True
-
+                # 如果文件内容有误，默认为 False（禁用）
+                return False
+    # 如果文件不存在，默认返回 False（禁用）
+    return False
 
 def save_whitelist_status(status):
+    # 将状态保存到文件
     with open(WHITELIST_STATUS_FILE, "w") as f:
         json.dump({"whitelist_enabled": status}, f)
 
-
 def is_whitelist_enabled():
+    # 返回白名单启用状态
     return load_whitelist_status()
 
 
