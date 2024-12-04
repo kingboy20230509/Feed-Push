@@ -3,7 +3,7 @@ Feed-Push 是一个用于将 RSS 源推送到 Telegram 群组或私人聊天的�
 运行一键安装脚本
 快速安装和配置 Telegram RSS Bot
 ```
-curl -sS -O https://github.com/ecouus/RSS/raw/main/allinone.sh && sudo chmod +x allinone.sh && ./allinone
+curl -sS -O https://github.com/ecouus/Feed-Push/raw/main/allinone.sh && sudo chmod +x allinone.sh && ./allinone
 ```
 - Bot Token
 在 BotFather 上创建一个新的 Telegram Bot，并获取 Bot Token。
