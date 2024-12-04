@@ -60,7 +60,9 @@ case $action in
     read WHITELIST_GROUP_ID
 
     if [ -z "$WHITELIST_GROUP_ID" ]; then
-        # 如果没有输入群组ID，关闭白名单
+        # 如果没有输入群组ID，默认设置为 -123456
+        WHITELIST_GROUP_ID="-123456"
+        # 关闭白名单
         ENABLE_WHITELIST="False"
         # 保存白名单状态为 False
         python3 -c "import json; json.dump({'whitelist_enabled': False}, open('whitelist_status.json', 'w'))"
@@ -76,7 +78,7 @@ case $action in
     sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
     sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
     sed -i "s|ENABLE_WHITELIST = \"\"|ENABLE_WHITELIST = \"$ENABLE_WHITELIST\"|g" telegram_rss_bot.py
-    sed -i "s|WHITELIST_GROUP_ID = -123456|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
+    sed -i "s|WHITELIST_GROUP_ID = group_id|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
 
     # 创建 systemd 服务文件
     echo "创建 systemd 服务文件..."
