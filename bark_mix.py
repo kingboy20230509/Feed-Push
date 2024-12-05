@@ -30,19 +30,19 @@ CONFIG = {
     "local_interval": 300,  # 本地模式检查间隔(秒)
     "max_retries": 1,  # 最大重试次数
     "proxy_file": "./local_proxies.txt",
-    "bark_url": "https://bark.suiyi.de/TjqwSqh5ooah4zrFZL63qR"
+    "bark_url": "https://yourbarkurl.com/barktoken"
 }
 
 RSS_SOURCES = [
     {
         "url": "https://rss.nodeseek.com/",
-        "keywords": ["咸鱼云", "白丝云"],
+        "keywords": ["咸鱼云", "黑五"],
         "group": "?group=Nodeseek",
         "cache_file": "./cache_nodeseek.json"
     },
     {
         "url": "http://www.v2ex.com/index.xml",
-        "keywords": ["咸鱼云", "白丝云"],
+        "keywords": ["咸鱼云", "黑五"],
         "group": "?group=Hezu",
         "cache_file": "./cache_v2ex.json"
     }
