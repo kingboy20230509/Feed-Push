@@ -70,6 +70,11 @@ sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bo
 ```
 sudo systemctl daemon-reload
 ```
+## 💻 Built with
+
+- [python](https://www.python.org/)
+- [Tailwind CSS](https://tailwindcss.com/): for styling
+- [GSAP](https://greensock.com/gsap/): for small SVG Animations
 ![ecouus's GitHub stats](https://github-readme-stats.vercel.app/api?username=ecouus&show_icons=true)
 ## License
 This project is licensed under the GNU General Public License v3.0.  
