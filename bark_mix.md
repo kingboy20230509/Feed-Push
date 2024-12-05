@@ -1,6 +1,5 @@
  "proxy_file": "./local_proxies.txt" 文件格式应按例子所示：
 ```
-账号:密码@ip:端口
 admin:password@1.2.3.4:1234
 admin:password@1.2.3.4:1235
 1.2.3.4:1234
