@@ -1,11 +1,13 @@
 # Feed-Push: Telegram RSS Bot
+## 🧐 Features
 Feed-Push可以将你关注的网站或博客的最新更新自动通过Bot进行推送，实现信息的即时传递。  
-**本机部署一键脚本：**
+## 🛠️ Installation Steps
+### 本机部署一键脚本：
 ```
 curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
 ```
   
-**Docker部署：**
+### Docker部署：
 ```
 docker run -d \
   --name telegram-rss-bot \
@@ -24,7 +26,7 @@ docker run -d \
 - **WHITELIST_GROUP_ID**: 群组 ID，用于验证用户是否在指定群组中，进群验证功能启用时需要设置。
 - **ENABLE_GROUP_VERIFY**: 是否启用群组验证功能。设置为 `false` 时，不启用群组验证；设置为 `true` 时，启用。
 - **UPDATE_INTERVAL**: RSS 源更新的时间间隔，单位为秒，默认为300s。
-- 
+PS:通过Docker部署的需要修改参数，可以先`docker stop telegram-rss-bot && docker rm telegram-rss-bot`，然后重新docker run  
 ### 基础指令
 - **`/start`**：注册并开始使用。
 - **`/help`**：查看帮助信息。
@@ -36,12 +38,12 @@ docker run -d \
 - **`/rm_rss <编号>`**：删除指定的 RSS 源。
 
 
-## 管理员命令
+### 管理员命令
 - **`/add_user <用户ID>`**：将用户添加到白名单。
 - **`/whitelist <on/off>`**：开启或关闭白名单模式。
 - **`/group_verify <on/off>`**：开启或关闭进群验证。  
 
-### **服务管理命令**
+### 本地部署管理命令
 - **启动服务**：
 ```
 sudo systemctl start telegram_rss_bot
@@ -71,11 +73,11 @@ sudo systemctl restart telegram_rss_bot && sudo systemctl status telegram_rss_bo
 sudo systemctl daemon-reload
 ```
 ## 💻 Built with
-
-- [python](https://www.python.org/)
-- [Tailwind CSS](https://tailwindcss.com/): for styling
-- [GSAP](https://greensock.com/gsap/): for small SVG Animations
-![ecouus's GitHub stats](https://github-readme-stats.vercel.app/api?username=ecouus&show_icons=true)
+- [Python](https://www.python.org/)
+- [Docker](https://www.docker.com/)
+## 🙇 Sponsors  
+Null  
+![ecouus's GitHub stats](https://github-readme-stats.vercel.app/api?username=ecouus&show_icons=true)  
 ## License
 This project is licensed under the GNU General Public License v3.0.  
 See the [LICENSE](LICENSE) file for details.
