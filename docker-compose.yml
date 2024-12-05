@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  telegram-rss-bot:
+    image: ecouus/telegram-rss-bot:latest
+    container_name: telegram-rss-bot
+    restart: always
+    volumes:
+      - ./telegram-rss-bot:/app/data  # 将本地目录挂载到容器
+    environment:
+      - TELEGRAM_BOT_TOKEN=bot_token  # 机器人token，通过@BotFather 创建
+      - ROOT_ID=admin_id  # 管理员id，通过@userinfobot 获取
+      - WHITELIST_GROUP_ID=-123456  # 白名单群组id，默认-123456
+      - ENABLE_GROUP_VERIFY=false  # 白名单群组验证，默认关闭，参数为true/false
+      - UPDATE_INTERVAL=300  # 抓取间隔，默认300s
