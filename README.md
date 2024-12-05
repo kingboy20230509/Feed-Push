@@ -1,18 +1,30 @@
 # Feed-Push: Telegram RSS Bot
 Feed-Push可以将你关注的网站或博客的最新更新自动通过Bot进行推送，实现信息的即时传递。  
-**快速安装和配置 Telegram RSS Bot：**
+**本机部署一键脚本：**
 ```
 curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
 ```
-**输入/help获取指令帮助！**  
-**默认抓取间隔时间为300s，时间过短可能会触发反爬机制导致ip被相应源封禁。默认关闭白名单模式和进群验证。**
-- **Bot Token**  
-    在 Telegram 上通过 BotFather 创建新 Bot，输入 `/newbot` 后按提示操作，获得 Token，并填入脚本中的 `TELEGRAM_BOT_TOKEN`。
-- **管理员 ID**  
-    使用 @userinfobot 获取你的 Telegram 用户 ID，填入脚本中的 `ROOT_ID`。
-- **群组 ID**  
-    用于验证用户是否已加入指定群组，开启进群验证功能时，需设置群组ID，通过 `/group_verify` 控制。
   
+**Docker部署：**
+```
+docker run -d \
+  --name telegram-rss-bot \
+  --restart always \
+  -v $(pwd)/data:/app/data \
+  -e TELEGRAM_BOT_TOKEN="bot_token" \
+  -e ROOT_ID="admin_id" \
+  -e WHITELIST_GROUP_ID="-123456" \
+  -e ENABLE_GROUP_VERIFY="false" \
+  -e UPDATE_INTERVAL="300" \
+  ecouus/telegram-rss-bot:latest
+```
+**输入/help获取指令帮助！**  
+- **TELEGRAM_BOT_TOKEN**: 在 Telegram 上通过 @BotFather 创建 Bot 时获得的 Token，用于与 Telegram API 进行交互。
+- **ROOT_ID**: 你的 Telegram 用户 ID，通常用于管理权限。可以通过 @userinfobot 获取。
+- **WHITELIST_GROUP_ID**: 群组 ID，用于验证用户是否在指定群组中，进群验证功能启用时需要设置。
+- **ENABLE_GROUP_VERIFY**: 是否启用群组验证功能。设置为 `false` 时，不启用群组验证；设置为 `true` 时，启用。
+- **UPDATE_INTERVAL**: RSS 源更新的时间间隔，单位为秒，默认为300s。
+- 
 ### 基础指令
 - **`/start`**：注册并开始使用。
 - **`/help`**：查看帮助信息。
