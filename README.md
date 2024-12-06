@@ -77,7 +77,7 @@ sudo systemctl daemon-reload
 - [Python](https://www.python.org/)
 - [Docker](https://www.docker.com/)
 ## 🙇 Sponsors  
-Null
+Null  
 ![ecouus's GitHub stats](https://github-readme-stats.vercel.app/api?username=ecouus&show_icons=true)  
 ## License
 This project is licensed under the GNU General Public License v3.0.  
