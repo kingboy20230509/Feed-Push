@@ -49,7 +49,7 @@ while true; do
 
         # 下载 Python 脚本
         echo "下载 telegram_rss_bot.py 脚本..."
-        wget -O telegram_rss_bot.py https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/telegram_rss_bot.py
+        wget -O telegram_rss_bot.py https://raw.githubusercontent.com/kingboy20230509/Feed-Push/refs/heads/main/telegram_rss_bot.py
 
         # 获取用户输入
         echo "请输入 Telegram Bot Token（通过@BotFather创建）:"
