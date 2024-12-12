@@ -488,24 +488,37 @@ async def check_new_posts(context):
                 title = escape_markdown(entry.title, version=2)
                 link = escape_markdown(entry.link, version=2)
 
-                          # 尝试获取预览内容
-                preview = ""
+                # 获取标题和预览文本
+                raw_title = entry.title.lower()
+                title = escape_markdown(entry.title, version=2)
+                link = escape_markdown(entry.link, version=2)
+                
+                # 获取预览内容
+                raw_preview = ""
                 if hasattr(entry, 'summary'):
-                    preview = entry.summary
+                    raw_preview = entry.summary
                 elif hasattr(entry, 'description'):
-                    preview = entry.description
-                # 清理HTML标签并限制长度
-                preview = re.sub(r'<[^>]+>', '', preview)
-                preview = preview[:100] + "..." if len(preview) > 100 else preview
+                    raw_preview = entry.description
+                
+                # 清理HTML标签
+                raw_preview = re.sub(r'<[^>]+>', '', raw_preview)
+                # 转换为小写以进行不区分大小写的匹配
+                raw_preview = raw_preview.lower()
+                
+                # 处理后的预览文本用于显示
+                preview = raw_preview[:100] + "..." if len(raw_preview) > 100 else raw_preview
                 preview = escape_markdown(preview, version=2)
                 
                 # 获取来源域名
                 source = urlparse(entry.link).netloc
                 
+                # 合并标题和预览文本进行匹配
+                combined_text = f"{raw_title}\n{raw_preview}"
+                
                 regex_patterns = rss.get("regex_patterns", [])
                 for pattern in regex_patterns:
                     try:
-                        if re.search(pattern, raw_title, re.IGNORECASE):
+                        if re.search(pattern, combined_text, re.IGNORECASE):
                             message = (
                                 "🔔 *新内容通知* 🔔\n"
                                 "━━━━━━━━━\n"
