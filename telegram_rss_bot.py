@@ -495,7 +495,7 @@ async def check_new_posts(context):
                         if re.search(pattern, raw_title, re.IGNORECASE):
                             await context.bot.send_message(
                                 chat_id=chat_id,
-                                text=f"*{title}*\n\n[查看详情]({link})",
+                                text=f"*{title}*\n\n{link}",
                                 parse_mode="MarkdownV2",
                             )
                             print(f"Message sent to {chat_id}: {raw_title}")
