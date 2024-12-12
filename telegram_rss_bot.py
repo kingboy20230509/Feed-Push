@@ -488,18 +488,39 @@ async def check_new_posts(context):
                 title = escape_markdown(entry.title, version=2)
                 link = escape_markdown(entry.link, version=2)
 
-                # 使用正则表达式匹配
+                          # 尝试获取预览内容
+                preview = ""
+                if hasattr(entry, 'summary'):
+                    preview = entry.summary
+                elif hasattr(entry, 'description'):
+                    preview = entry.description
+                # 清理HTML标签并限制长度
+                preview = re.sub(r'<[^>]+>', '', preview)
+                preview = preview[:100] + "..." if len(preview) > 100 else preview
+                preview = escape_markdown(preview, version=2)
+                
+                # 获取来源域名
+                source = urlparse(entry.link).netloc
+                
                 regex_patterns = rss.get("regex_patterns", [])
                 for pattern in regex_patterns:
                     try:
                         if re.search(pattern, raw_title, re.IGNORECASE):
+                            message = (
+                                "🔔 *新内容通知* 🔔\n"
+                                "━━━━━━━━━\n"
+                                f"📌 *标题*: {title} \n"
+                                f"🕒 *预览*: {preview}\n"
+                                f"📱 *来源*: {escape_markdown(source, version=2)}\n"
+                                f"🔗 *链接*: {link}"
+                            )
+                            
                             await context.bot.send_message(
                                 chat_id=chat_id,
-                                text=f"*{title}*\n\n{link}",
+                                text=message,
                                 parse_mode="MarkdownV2",
                             )
                             print(f"Message sent to {chat_id}: {raw_title}")
-
                             cached_guids.add(guid)
                             save_cache(cached_guids)
                             break
