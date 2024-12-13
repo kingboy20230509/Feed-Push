@@ -1,5 +1,7 @@
 from telegram.ext import Application, CommandHandler
 from telegram.helpers import escape_markdown
+from urllib.parse import urlparse
+import re
 import feedparser
 import requests
 import os
@@ -484,13 +486,9 @@ async def check_new_posts(context):
                 if guid in cached_guids:
                     continue
 
-                raw_title = entry.title.lower()
-                title = escape_markdown(entry.title, version=2)
-                link = escape_markdown(entry.link, version=2)
-
                 # 获取标题和预览文本
                 raw_title = entry.title.lower()
-                title = escape_markdown(entry.title, version=2)
+                title = f"*{escape_markdown(entry.title, version=2)}*"  # 标题加粗
                 link = escape_markdown(entry.link, version=2)
                 
                 # 获取预览内容
@@ -505,12 +503,14 @@ async def check_new_posts(context):
                 # 转换为小写以进行不区分大小写的匹配
                 raw_preview = raw_preview.lower()
                 
-                # 处理后的预览文本用于显示
-                preview = raw_preview[:100] + "..." if len(raw_preview) > 100 else raw_preview
+                # 处理后的预览文本用于显示（增加到300字）
+                preview = raw_preview[:300] + "..." if len(raw_preview) > 300 else raw_preview
                 preview = escape_markdown(preview, version=2)
                 
-                # 获取来源域名
-                source = urlparse(entry.link).netloc
+                # 获取来源域名并提取中间部分
+                full_domain = urlparse(entry.link).netloc
+                domain_parts = full_domain.split('.')
+                source = domain_parts[1] if len(domain_parts) >= 3 else domain_parts[0]  # 提取中间部分或第一部分
                 
                 # 合并标题和预览文本进行匹配
                 combined_text = f"{raw_title}\n{raw_preview}"
@@ -522,7 +522,7 @@ async def check_new_posts(context):
                             message = (
                                 "🔔 *新内容通知* 🔔\n"
                                 "━━━━━━━━━\n"
-                                f"📌 *标题*: {title} \n"
+                                f"📌 {title}\n"  # 标题已加粗，不需要再加*
                                 f"🕒 *预览*: {preview}\n"
                                 f"📱 *来源*: {escape_markdown(source, version=2)}\n"
                                 f"🔗 *链接*: {link}"
@@ -532,6 +532,7 @@ async def check_new_posts(context):
                                 chat_id=chat_id,
                                 text=message,
                                 parse_mode="MarkdownV2",
+                                disable_web_page_preview=True  # 禁用链接预览
                             )
                             print(f"Message sent to {chat_id}: {raw_title}")
                             cached_guids.add(guid)
