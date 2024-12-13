@@ -522,10 +522,10 @@ async def check_new_posts(context):
                             message = (
                                 "🔔 *新内容通知* 🔔\n"
                                 "━━━━━━━━━\n"
-                                f"📌 {title}\n"  # 标题已加粗，不需要再加*
-                                f"🕒 *预览*: {preview}\n"
-                                f"📱 *来源*: {escape_markdown(source, version=2)}\n"
-                                f"🔗 *链接*: {link}"
+                                f"📌*标题*: {title}\n\n"  # 标题已加粗，不需要再加*
+                                f"📌*预览*: {preview}\n\n"
+                                f"🔗*链接*: {link}\n"
+                                f"📱*来源*: {escape_markdown(source, version=2)}"
                             )
                             
                             await context.bot.send_message(
