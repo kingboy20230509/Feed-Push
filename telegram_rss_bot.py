@@ -485,10 +485,10 @@ async def check_new_posts(context):
 
                 if guid in cached_guids:
                     continue
-
+                    
                 # 获取标题和预览文本
                 raw_title = entry.title.lower()
-                title = f"*{escape_markdown(entry.title, version=2)}*"  # 标题加粗
+                escaped_title = escape_markdown(entry.title, version=2)
                 link = escape_markdown(entry.link, version=2)
                 
                 # 获取预览内容
@@ -520,12 +520,10 @@ async def check_new_posts(context):
                     try:
                         if re.search(pattern, combined_text, re.IGNORECASE):
                             message = (
-                                "🔔 *新内容通知* 🔔\n"
-                                "━━━━━━━━━\n"
-                                f"📌*标题*: {title}\n\n"  # 标题已加粗，不需要再加*
-                                f"📌*预览*: {preview}\n\n"
-                                f"🔗*链接*: {link}\n"
-                                f"📱*来源*: {escape_markdown(source, version=2)}"
+                                f"🔔 *{escaped_title}* 🔔\n\n"
+                                f"📌 {preview}\n\n"
+                                f"🔗 {link}\n"
+                                f"📱 {escape_markdown(source, version=2)}"
                             )
                             
                             await context.bot.send_message(
