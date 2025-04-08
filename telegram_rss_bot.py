@@ -236,9 +236,11 @@ async def list_source(update, context):
     await update.message.reply_text(response)
 
 
+# 创建正则表达式模式 - 改进的版本，更好地处理中文和混合字符
 def create_regex_pattern(pattern_str):
     # 处理简单关键词
     if not any(c in pattern_str for c in "+-"):
+        # 简单关键词不需要复杂处理，直接创建包含模式
         return f".*{re.escape(pattern_str)}.*"
 
     # 处理复杂模式
@@ -252,17 +254,24 @@ def create_regex_pattern(pattern_str):
         if "-" in part:
             neg_parts = part.split("-")
             if neg_parts[0]:  # 如果有正向匹配部分
+                # 确保中文字符也能被正确匹配
                 positive_patterns.append(f"(?=.*{re.escape(neg_parts[0])})")
             for neg_part in neg_parts[1:]:
                 if neg_part:
+                    # 确保中文字符也能被正确匹配
                     negative_patterns.append(f"(?!.*{re.escape(neg_part)})")
         else:
+            # 确保中文字符也能被正确匹配
             positive_patterns.append(f"(?=.*{re.escape(part)})")
 
-    return "^" + "".join(negative_patterns + positive_patterns) + ".*$"
+    # 组合模式
+    combined_pattern = "^" + "".join(negative_patterns + positive_patterns) + ".*$"
+    # 打印调试信息
+    print(f"Pattern '{pattern_str}' converted to regex: {combined_pattern}")
+    return combined_pattern
 
 
-# 添加关键词到特定 RSS 源
+# 添加关键词到特定 RSS 源 - 改进版本
 async def add(update, context):
     user_id = update.effective_user.id
     if not await is_user_in_group(user_id, context):
@@ -303,7 +312,7 @@ async def add(update, context):
     added_keywords = []
 
     for pattern in patterns:
-        pattern = pattern.lower().strip()
+        pattern = pattern.strip()  # 不再转换为小写，保留原始大小写
         if pattern:  # 确保不是空字符串
             user_data[chat_id]["rss_sources"][rss_index]["keywords"].append(pattern)
             regex_pattern = create_regex_pattern(pattern)
@@ -446,13 +455,12 @@ async def rm_rss(update, context):
 
     await update.message.reply_text(f"RSS 源已删除：{removed_rss['url']}")
 
-# 检查 RSS 并推送新内容
+# 检查 RSS 并推送新内容 - 改进版本
 async def check_new_posts(context):
     print("Fetching RSS data...")
     cached_guids = load_cache()
     user_data = load_user_data()
 
-    # 定义请求头
     # 定义请求头
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -486,8 +494,8 @@ async def check_new_posts(context):
                 if guid in cached_guids:
                     continue
                     
-                # 获取标题和预览文本
-                raw_title = entry.title.lower()
+                # 获取标题和预览文本 - 现在不转换为小写
+                raw_title = entry.title
                 escaped_title = escape_markdown(entry.title, version=2)
                 link = escape_markdown(entry.link, version=2)
                 
@@ -500,10 +508,8 @@ async def check_new_posts(context):
                 
                 # 清理HTML标签
                 raw_preview = re.sub(r'<[^>]+>', '', raw_preview)
-                # 转换为小写以进行不区分大小写的匹配
-                raw_preview = raw_preview.lower()
                 
-                # 处理后的预览文本用于显示（增加到300字）
+                # 处理后的预览文本用于显示
                 preview = raw_preview[:300] + "..." if len(raw_preview) > 300 else raw_preview
                 preview = escape_markdown(preview, version=2)
                 
@@ -512,13 +518,18 @@ async def check_new_posts(context):
                 domain_parts = full_domain.split('.')
                 source = domain_parts[1] if len(domain_parts) >= 3 else domain_parts[0]  # 提取中间部分或第一部分
                 
-                # 合并标题和预览文本进行匹配
+                # 合并标题和预览文本进行匹配 - 不再转换为小写
                 combined_text = f"{raw_title}\n{raw_preview}"
+                
+                # 调试信息
+                print(f"Checking entry: {raw_title}")
                 
                 regex_patterns = rss.get("regex_patterns", [])
                 for pattern in regex_patterns:
                     try:
-                        if re.search(pattern, combined_text, re.IGNORECASE):
+                        # 使用不区分大小写的标志，但保留原始文本
+                        if re.search(pattern, combined_text, re.IGNORECASE | re.DOTALL):
+                            print(f"Match found for pattern: {pattern}")
                             message = (
                                 f"🔔 *{escaped_title}* 🔔\n\n"
                                 f"📌 {preview}\n\n"
@@ -536,6 +547,8 @@ async def check_new_posts(context):
                             cached_guids.add(guid)
                             save_cache(cached_guids)
                             break
+                        else:
+                            print(f"No match for pattern: {pattern}")
                     except re.error as e:
                         print(f"Regex error: {e} for pattern: {pattern}")
 
