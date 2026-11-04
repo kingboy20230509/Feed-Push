@@ -6,12 +6,11 @@ services:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.11-slim}
         REQUIREMENTS_FILE: ${REQUIREMENTS_FILE:-requirements.txt}
     image: feed-push:local
-    container_name: telegram-rss-bot
     restart: unless-stopped
     init: true
     stop_grace_period: 2m
     volumes:
-      - ./data:/app/data
+      - ${BOT_DATA_DIR:-./data}:/app/data
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?请在.env中填写Bot Token}
       ROOT_ID: ${ROOT_ID:?请在.env中填写管理员ID}
