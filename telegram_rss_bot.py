@@ -9,15 +9,18 @@ import json
 import re
 
 # 配置
-CACHE_FILE = "./rss_cache3.txt"  # 本地缓存文件
-USER_DATA_FILE = "./user_data.json"  # 存储用户规则和 RSS 源
-ALLOWED_USERS_FILE = "./allowed_users.json"  # 存储白名单的文件
-WHITELIST_STATUS_FILE = "./whitelist_status.json"  # 白名单模式状态文件
-TELEGRAM_BOT_TOKEN = "Telegram_Bot_Token"  # 替换为你的 Telegram Bot Token
-ROOT_ID = admin_id  # 替换为管理员的 Telegram 用户 ID
-WHITELIST_GROUP_ID = group_id  # 替换为你的 Telegram 群组 ID，必须是负数
+DATA_DIR = os.getenv("DATA_DIR", ".")  # 本机部署默认仍使用当前目录
+CACHE_FILE = os.path.join(DATA_DIR, "rss_cache3.txt")  # 本地缓存文件
+USER_DATA_FILE = os.path.join(DATA_DIR, "user_data.json")  # 存储用户规则和 RSS 源
+ALLOWED_USERS_FILE = os.path.join(DATA_DIR, "allowed_users.json")  # 存储白名单的文件
+WHITELIST_STATUS_FILE = os.path.join(DATA_DIR, "whitelist_status.json")  # 白名单模式状态文件
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "Telegram_Bot_Token")
+ROOT_ID = int(os.getenv("ROOT_ID", "0"))
+_group_id = os.getenv("WHITELIST_GROUP_ID", "-123456")
+WHITELIST_GROUP_ID = "false" if _group_id.lower() == "false" else int(_group_id)
+UPDATE_INTERVAL = int(os.getenv("UPDATE_INTERVAL", "300"))
 
-ENABLE_GROUP_VERIFY = False  # 控制是否开启进群验证
+ENABLE_GROUP_VERIFY = os.getenv("ENABLE_GROUP_VERIFY", "false").lower() == "true"
 
 # 加载白名单
 def load_allowed_users():
@@ -639,6 +642,14 @@ async def help_command(update, context):
 
 # 主函数
 def main():
+    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "Telegram_Bot_Token":
+        raise ValueError("请设置 TELEGRAM_BOT_TOKEN")
+    if ROOT_ID <= 0:
+        raise ValueError("ROOT_ID 必须为管理员的正整数用户 ID")
+    if UPDATE_INTERVAL <= 0:
+        raise ValueError("UPDATE_INTERVAL 必须大于 0")
+    os.makedirs(DATA_DIR, exist_ok=True)
+
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).connect_timeout(20).build()
 
     application.add_handler(CommandHandler("start", start))
@@ -653,7 +664,7 @@ def main():
     application.add_handler(CommandHandler("group_verify", toggle_group_verify))  # 添加新的命令处理器
     application.add_handler(CommandHandler("help", help_command))
 
-    application.job_queue.run_repeating(check_new_posts, interval=300, first=0)
+    application.job_queue.run_repeating(check_new_posts, interval=UPDATE_INTERVAL, first=0)
 
     application.run_polling()
 

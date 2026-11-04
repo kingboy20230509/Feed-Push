@@ -79,11 +79,11 @@ while true; do
         fi
         
         # 替换 Python 脚本中的占位符
-        sed -i "s|TELEGRAM_BOT_TOKEN = \"Telegram_Bot_Token\"|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
-        sed -i "s|ROOT_ID = admin_id|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
-        sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=300, first=0)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" telegram_rss_bot.py
-        sed -i "s|ENABLE_GROUP_VERIFY = False|ENABLE_GROUP_VERIFY = $ENABLE_GROUP_VERIFY|g" telegram_rss_bot.py
-        sed -i "s|WHITELIST_GROUP_ID = group_id|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
+        sed -i "s|^TELEGRAM_BOT_TOKEN = .*|TELEGRAM_BOT_TOKEN = \"$TELEGRAM_BOT_TOKEN\"|g" telegram_rss_bot.py
+        sed -i "s|^ROOT_ID = .*|ROOT_ID = $ROOT_ID|g" telegram_rss_bot.py
+        sed -i "s|^UPDATE_INTERVAL = .*|UPDATE_INTERVAL = $INTERVAL|g" telegram_rss_bot.py
+        sed -i "s|^ENABLE_GROUP_VERIFY = .*|ENABLE_GROUP_VERIFY = $ENABLE_GROUP_VERIFY|g" telegram_rss_bot.py
+        sed -i "s|^WHITELIST_GROUP_ID = .*|WHITELIST_GROUP_ID = $WHITELIST_GROUP_ID|g" telegram_rss_bot.py
 
         # 创建 systemd 服务文件
         echo "创建 systemd 服务文件..."
@@ -143,6 +143,7 @@ EOF
             echo "请输入新的更新间隔时间（秒）："
             read INTERVAL
             sed -i "s|application.job_queue.run_repeating(check_new_posts, interval=.*)|application.job_queue.run_repeating(check_new_posts, interval=$INTERVAL, first=0)|g" /home/Python_project/telegram_rss_bot/telegram_rss_bot.py
+            sed -i "s|^UPDATE_INTERVAL = .*|UPDATE_INTERVAL = $INTERVAL|g" /home/Python_project/telegram_rss_bot/telegram_rss_bot.py
             ;;
           4)
             echo "请输入新的白名单群组 ID:"
