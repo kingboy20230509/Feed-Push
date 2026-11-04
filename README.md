@@ -5,29 +5,33 @@ Feed-Push可以将你关注的网站或博客的最新更新自动通过Bot进�
 ## 🛠️ Installation Steps
 ### 本机部署一键脚本：
 ```
-curl -sS -O https://raw.githubusercontent.com/ecouus/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
+curl -sS -O https://raw.githubusercontent.com/kingboy20230509/Feed-Push/refs/heads/main/bot_deploy.sh && sudo chmod +x bot_deploy.sh && ./bot_deploy.sh
 ```
   
-### Docker部署：
+### Docker部署（构建本仓库代码）：
+```bash
+git clone https://github.com/kingboy20230509/Feed-Push.git
+cd Feed-Push
+cp .env.example .env
+# 编辑 .env，填写 Token、管理员 ID 等配置
+nano .env
+docker compose up -d --build
+docker compose logs --tail=100 -f
 ```
-docker run -d \
-  --name telegram-rss-bot \
-  --restart always \
-  -v $(pwd)/data:/app/data \
-  -e TELEGRAM_BOT_TOKEN="bot_token" \
-  -e ROOT_ID="admin_id" \
-  -e WHITELIST_GROUP_ID="-123456" \
-  -e ENABLE_GROUP_VERIFY="false" \
-  -e UPDATE_INTERVAL="300" \
-  ecouus/telegram-rss-bot:latest
-```
+
+镜像由本仓库的 `telegram_rss_bot.py` 构建，数据保存在宿主机 `./data/`。
+不需要开放入站端口，服务器需要能够访问 Telegram 和所订阅的 RSS 网站。
+
+**原 systemd 部署迁移请先阅读 [Docker 迁移说明](DOCKER_MIGRATION.md)**，
+先准备镜像，再停止旧服务，最后复制数据并启动容器，避免同一 Bot 同时运行两份。
+
 **输入/help获取指令帮助！**  
 - **TELEGRAM_BOT_TOKEN**: 在 Telegram 上通过 @BotFather 创建 Bot 时获得的 Token，用于与 Telegram API 进行交互。
 - **ROOT_ID**: 你的 Telegram 用户 ID，通常用于管理权限。可以通过 @userinfobot 获取。
 - **WHITELIST_GROUP_ID**: 群组 ID，用于验证用户是否在指定群组中，进群验证功能启用时需要设置。
 - **ENABLE_GROUP_VERIFY**: 是否启用群组验证功能。设置为 `false` 时，不启用群组验证；设置为 `true` 时，启用。
 - **UPDATE_INTERVAL**: RSS 源更新的时间间隔，单位为秒，默认为300s。
-PS:通过Docker部署的需要修改参数，可以先`docker stop telegram-rss-bot && docker rm telegram-rss-bot`，然后重新docker run  
+Docker 修改参数：编辑 `.env` 后执行 `docker compose up -d`；仅执行 `restart` 不会应用新的环境变量。
 ### 基础指令
 - **`/start`**：注册并开始使用。
 - **`/help`**：查看帮助信息。
