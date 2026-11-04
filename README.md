@@ -59,15 +59,30 @@ bash bot-instance.sh up bot2
 `instances/bot1/data/`，把原配置填入 `instances/bot1/.env`，然后启动 bot1。
 镜像升级不会覆盖这些宿主机文件。旧版固定容器名已取消，容器名由各实例的 Compose 项目名生成。
 
+### 按钮操作与权限
+
+私聊 Bot 发送 `/start` 或 `/menu` 打开按钮菜单，也可从 Telegram 的指令菜单选择入口。
+点击“我的订阅源”选择源，分页查看关键词；添加时只需按提示发送链接或关键词，
+多个关键词可用空格或换行分隔，`+pi+desktop` 等组合规则保持原匹配方式。
+删除订阅、删除关键词均需再次确认。按钮中的“取消”或 `/cancel` 可取消输入，输入五分钟后超时。
+旧按钮在打开新菜单或 Bot 重启后失效，重新发送 `/menu` 即可。
+
+**仅当前实例 `ROOT_ID` 对应的管理员可在私聊中操作和接收推送。**
+指令、按钮、后续文字输入统一校验权限；关闭白名单或添加其他白名单用户均不会开放访问。
+历史非管理员和群聊的订阅数据保留，但不再推送。多 Bot 实例各自使用各自的 `ROOT_ID`。
+升级后现有配置、订阅、关键词和缓存无需转换。
+
 **输入/help获取指令帮助！**  
 - **TELEGRAM_BOT_TOKEN**: 在 Telegram 上通过 @BotFather 创建 Bot 时获得的 Token，用于与 Telegram API 进行交互。
-- **ROOT_ID**: 你的 Telegram 用户 ID，通常用于管理权限。可以通过 @userinfobot 获取。
+- **ROOT_ID**: 唯一可使用该 Bot 的管理员 Telegram 数字用户 ID；应填写用户 ID，而非用户名或 Bot ID。
 - **WHITELIST_GROUP_ID**: 群组 ID，用于验证用户是否在指定群组中，进群验证功能启用时需要设置。
 - **ENABLE_GROUP_VERIFY**: 是否启用群组验证功能。设置为 `false` 时，不启用群组验证；设置为 `true` 时，启用。
 - **UPDATE_INTERVAL**: RSS 源更新的时间间隔，单位为秒，默认为300s。
 Docker 修改参数：编辑 `.env` 后执行 `docker compose up -d`；仅执行 `restart` 不会应用新的环境变量。
 ### 基础指令
 - **`/start`**：注册并开始使用。
+- **`/menu`**：打开按钮菜单。
+- **`/cancel`**：取消当前输入，返回主菜单。
 - **`/help`**：查看帮助信息。
 - **`/add_rss <URL>`**：添加 RSS 订阅源。
 - **`/list_rss`**：查看已添加的 RSS 源。
@@ -78,6 +93,7 @@ Docker 修改参数：编辑 `.env` 后执行 `docker compose up -d`；仅执行
 
 
 ### 管理员命令
+白名单相关命令仅保留旧版数据操作兼容，不会授予其他账号使用权限。
 - **`/add_user <用户ID>`**：将用户添加到白名单。
 - **`/whitelist <on/off>`**：开启或关闭白名单模式。
 - **`/group_verify <on/off>`**：开启或关闭进群验证。  

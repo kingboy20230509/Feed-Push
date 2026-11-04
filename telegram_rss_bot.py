@@ -1,4 +1,7 @@
-from telegram.ext import Application, CommandHandler
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
+from telegram.ext import (Application, ApplicationHandlerStop, CallbackQueryHandler,
+                          CommandHandler, MessageHandler, TypeHandler, filters)
 from telegram.helpers import escape_markdown
 from urllib.parse import urlparse
 import re
@@ -7,6 +10,9 @@ import requests
 import os
 import json
 import re
+import secrets
+import time
+from types import SimpleNamespace
 
 # 配置
 DATA_DIR = os.getenv("DATA_DIR", ".")  # 本机部署默认仍使用当前目录
@@ -40,10 +46,8 @@ def save_allowed_users(users):
 
 
 def is_allowed_user(user_id):
-    if not is_whitelist_enabled():
-        return True
-    allowed_users = load_allowed_users()
-    return user_id in allowed_users
+    # ROOT_ID 是唯一使用者；关闭白名单或添加白名单均不会开放访问。
+    return ROOT_ID > 0 and user_id == ROOT_ID
 
 
 # 检查用户是否在特定群组中
@@ -133,9 +137,9 @@ async def start(update, context):
     if chat_id not in user_data:
         user_data[chat_id] = {"rss_sources": []}
         save_user_data(user_data)
-        await update.message.reply_text("欢迎！您已成功注册。请使用 /add_rss 添加 RSS 源。使用 /help 获取帮助。")
+        await update.message.reply_text("欢迎！您已成功注册，点击按钮管理订阅。", reply_markup=home_keyboard(update, context))
     else:
-        await update.message.reply_text("您已注册！可以继续添加或管理 RSS 源和相关规则。使用 /help 获取帮助。")
+        await update.message.reply_text("点击按钮管理 RSS 订阅和关键词。", reply_markup=home_keyboard(update, context))
 
 
 # 添加 RSS 订阅源
@@ -473,6 +477,9 @@ async def check_new_posts(context):
     }
 
     for chat_id, data in user_data.items():
+        # 保留历史数据，但不再向其他用户或群聊推送。
+        if str(chat_id) != str(ROOT_ID):
+            continue
         rss_sources = data.get("rss_sources", [])
         for rss in rss_sources:
             rss_url = rss["url"]
@@ -617,6 +624,7 @@ async def help_command(update, context):
 
     help_text = (
         "欢迎使用我们的 Telegram Bot！以下是可用命令的列表：\n"
+        "仅管理员私聊可用。发送 /menu 打开按钮菜单，/cancel 取消输入。\n"
         "/start - 注册与启动服务\n"
         "/help - 查看帮助信息\n"
         "/add_rss - 添加一个新的 RSS 源\n"
@@ -631,6 +639,7 @@ async def help_command(update, context):
         "/rm_rss - 删除指定的 RSS 源\n"
         " \n"
         "管理员命令\n"
+        "白名单命令保留旧版数据兼容，不会向其他账号开放权限。\n"
         "/add_user <用户ID> - 将用户添加到白名单(仅管理员可用)\n"
         "/group_verify <on/off> - 开启或关闭进群验证 (仅管理员可用)\n"
         "/whitelist <on/off> - 开启或关闭白名单模式(仅管理员可用)\n"
@@ -638,7 +647,234 @@ async def help_command(update, context):
         "请依照指令格式进行操作，享受我们的服务！"
     )
 
-    await update.message.reply_text(help_text)
+    await update.message.reply_text(help_text, reply_markup=home_keyboard(update, context))
+
+
+# 按钮会话绑定操作者和聊天；打开新菜单后旧按钮失效。
+async def enforce_admin(update, context):
+    if (update.effective_user and is_allowed_user(update.effective_user.id)
+            and update.effective_chat and update.effective_chat.id == ROOT_ID):
+        return
+    if update.callback_query:
+        await update.callback_query.answer("仅管理员可以私聊使用此 Bot。", show_alert=True)
+    elif update.effective_message:
+        await update.effective_message.reply_text("仅管理员可以私聊使用此 Bot。")
+    raise ApplicationHandlerStop
+
+
+def menu_keyboard(update, context, rows, **state):
+    state.update(chat_id=update.effective_chat.id, token=secrets.token_hex(4))
+    context.user_data["rss_menu"] = state
+    prefix = f"ui:{update.effective_user.id}:{state['token']}:"
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(label, callback_data=prefix + action) for label, action in row]
+        for row in rows
+    ])
+
+
+def home_keyboard(update, context):
+    return menu_keyboard(update, context, [
+        [("📚 我的订阅源", "sources:0")],
+        [("➕ 添加订阅", "add_source")],
+        [("⚙️ 管理设置", "settings")],
+        [("🔄 刷新总览", "home")],
+    ], view="home")
+
+
+async def menu_access(update, context, verify_group=True):
+    user_id = update.effective_user.id
+    return (is_allowed_user(user_id) and update.effective_chat.id == ROOT_ID
+            and (not verify_group or await is_user_in_group(user_id, context)))
+
+
+async def render_menu(update, context, view="home", page=0, url=None):
+    sources = load_user_data().get(str(update.effective_chat.id), {}).get("rss_sources", [])
+    if view == "home":
+        text = f"📡 RSS 推送管理\n\n订阅源：{len(sources)} 个\n点击下方按钮操作。"
+        markup = home_keyboard(update, context)
+    else:
+        size = 8
+        if view == "sources":
+            items = sources
+            text = "📚 我的订阅源\n请选择一个订阅源。" if sources else "还没有订阅源。"
+        else:
+            source = next((s for s in sources if s["url"] == url), None)
+            if source is None:
+                return await render_menu(update, context, "sources")
+            items = source.get("keywords", [])
+            text = f"📌 {url[:180]}\n\n关键词：{len(items)} 条"
+        page = max(0, min(page, max(0, (len(items) - 1) // size)))
+        rows = []
+        for index in range(page * size, min(len(items), (page + 1) * size)):
+            if view == "sources":
+                rows.append([(f"📌 {index + 1}. {items[index]['url'][:48]}", f"source:{index}")])
+            else:
+                text += f"\n{index + 1}. {items[index][:200]}"
+                rows.append([("🗑 删除 " + str(index + 1) + ". " + items[index][:35], f"delete_rule:{index}")])
+        pages = []
+        if page:
+            pages.append(("◀️ 上一页", f"{view}:{page - 1}"))
+        if (page + 1) * size < len(items):
+            pages.append(("下一页 ▶️", f"{view}:{page + 1}"))
+        if pages:
+            rows.append(pages)
+        if view == "sources":
+            rows.append([("➕ 添加订阅", "add_source")])
+        else:
+            rows.append([("➕ 添加关键词", "add_rules")])
+            rows.append([("🗑 删除此订阅", "delete_source")])
+        rows.append([("🔄 刷新", f"{view}:{page}")])
+        rows.append([("◀️ 返回", "home" if view == "sources" else "sources:0")])
+        markup = menu_keyboard(update, context, rows, view=view, url=url,
+                               source_urls=[s["url"] for s in sources], page=page,
+                               source=source if view == "rules" else None)
+    if update.callback_query:
+        await update.callback_query.edit_message_text(text, reply_markup=markup)
+    else:
+        await update.message.reply_text(text, reply_markup=markup)
+
+
+async def menu_callback(update, context):
+    query = update.callback_query
+    parts = str(query.data).split(":")
+    state = context.user_data.get("rss_menu", {})
+    if (len(parts) < 4 or parts[1] != str(update.effective_user.id)
+            or parts[2] != state.get("token") or state.get("chat_id") != update.effective_chat.id):
+        await query.answer("按钮已过期或属于其他用户，请发送 /menu。", show_alert=True)
+        return
+    # 管理开关沿用原管理员指令权限，避免开启进群验证后无法关闭。
+    if not await menu_access(update, context, verify_group=parts[3] not in ("settings", "group_verify")):
+        await query.answer("您没有权限使用此 Bot。", show_alert=True)
+        return
+    await query.answer()
+    action = parts[3]
+    try:
+        if action == "home":
+            await render_menu(update, context)
+        elif action in ("sources", "rules") and len(parts) == 5:
+            await render_menu(update, context, action, int(parts[4]), state.get("url"))
+        elif action == "source" and len(parts) == 5:
+            index = int(parts[4])
+            if index < 0:
+                raise ValueError("Invalid source")
+            await render_menu(update, context, "rules", url=state["source_urls"][index])
+        elif action in ("add_source", "add_rules"):
+            await prompt_menu_input(update, context, action, state.get("url"))
+        elif action in ("delete_rule", "delete_source") and state.get("view") == "rules":
+            index = int(parts[4]) if action == "delete_rule" else None
+            source = state["source"]
+            if index is not None and not 0 <= index < len(source.get("keywords", [])):
+                raise ValueError("Invalid rule")
+            label = source["keywords"][index] if index is not None else source["url"]
+            markup = menu_keyboard(update, context, [
+                [("✅ 确认删除", "confirm_delete"), ("❌ 取消", "rules:0")]
+            ], view="confirm", url=source["url"], source=source, rule_index=index)
+            await query.edit_message_text(f"确认删除{'关键词' if index is not None else '订阅源'}？\n{label[:500]}", reply_markup=markup)
+        elif action == "confirm_delete" and state.get("view") == "confirm":
+            sources = load_user_data().get(str(update.effective_chat.id), {}).get("rss_sources", [])
+            index = next((i for i, s in enumerate(sources) if s["url"] == state["url"]), None)
+            if index is None or sources[index] != state["source"]:
+                await query.message.reply_text("订阅或规则已变化，已取消删除，请重新选择。")
+            else:
+                context.user_data.pop("rss_menu", None)
+                rule = state["rule_index"]
+                handler, args = ((rm_rss, [str(index + 1)]) if rule is None else
+                                 (rm, [str(index + 1), str(rule + 1)]))
+                await run_menu_command(update, context, handler, args)
+            await render_menu(update, context, "rules", url=state["url"])
+        elif action == "settings":
+            await render_settings(update, context)
+        elif action == "group_verify" and len(parts) == 5 and parts[4] in ("on", "off"):
+            await run_menu_command(update, context, toggle_group_verify, [parts[4]])
+            await render_settings(update, context)
+    except (ValueError, IndexError, KeyError, TypeError):
+        await render_menu(update, context)
+    except BadRequest as error:
+        if "message is not modified" not in str(error).lower():
+            raise
+
+
+async def render_settings(update, context):
+    status = "开启" if ENABLE_GROUP_VERIFY else "关闭"
+    markup = menu_keyboard(update, context, [
+        [("✅ 开启进群验证", "group_verify:on"), ("⏸ 关闭进群验证", "group_verify:off")],
+        [("🔄 刷新", "settings"), ("◀️ 返回", "home")],
+    ], view="settings")
+    await update.callback_query.edit_message_text(
+        f"⚙️ 管理设置\n\n使用权限：仅管理员私聊\n检查间隔：{UPDATE_INTERVAL} 秒\n进群验证：{status}\n"
+        "进群验证开关重启后按原配置恢复。", reply_markup=markup)
+
+
+async def run_menu_command(update, context, handler, args):
+    # 复用原指令处理器；回调中的 message 属于 Bot，操作者仍取真实用户。
+    message = update.effective_message
+
+    async def reply(text, **kwargs):
+        await message.reply_text(text[:3500], **kwargs)
+
+    adapted = SimpleNamespace(effective_user=update.effective_user,
+                              effective_chat=update.effective_chat,
+                              message=SimpleNamespace(reply_text=reply))
+    previous = context.args
+    context.args = args
+    try:
+        await handler(adapted, context)
+    finally:
+        context.args = previous
+
+
+async def prompt_menu_input(update, context, kind, url=None):
+    text = ("请发送 RSS 订阅链接，例如：https://rss.nodeseek.com/" if kind == "add_source"
+            else "请发送关键词，多个规则用空格或换行分隔。\n例如：ovh netcup +pi+desktop\n+A+B 表示同时包含 A 和 B，+A-B 表示包含 A 且排除 B。")
+    markup = menu_keyboard(update, context, [[("❌ 取消", "home")]],
+                           view="input", pending=kind, url=url, expires=time.monotonic() + 300)
+    await update.callback_query.edit_message_text(text + "\n五分钟内发送有效，或点击取消。", reply_markup=markup)
+
+
+async def menu_text(update, context):
+    state = context.user_data.get("rss_menu", {})
+    if not state.get("pending") or state.get("chat_id") != update.effective_chat.id:
+        return
+    if not await menu_access(update, context):
+        context.user_data.pop("rss_menu", None)
+        return
+    if time.monotonic() > state["expires"]:
+        context.user_data.pop("rss_menu", None)
+        await update.message.reply_text("输入已超时，请发送 /menu 重新操作。")
+        return
+    text = update.message.text.strip()
+    if not text or len(text) > 1000:
+        await update.message.reply_text("请发送 1～1000 字的内容，或发送 /cancel 取消。")
+        return
+    if state["pending"] == "add_source":
+        parsed = urlparse(text)
+        if len(text.split()) != 1 or parsed.scheme not in ("http", "https") or not parsed.hostname:
+            await update.message.reply_text("请发送一个完整的 http:// 或 https:// RSS 链接。")
+            return
+        context.user_data.pop("rss_menu", None)
+        await run_menu_command(update, context, add_rss, [text])
+        await render_menu(update, context, "sources")
+    elif state["pending"] == "add_rules":
+        sources = load_user_data().get(str(update.effective_chat.id), {}).get("rss_sources", [])
+        index = next((i for i, s in enumerate(sources) if s["url"] == state["url"]), None)
+        context.user_data.pop("rss_menu", None)
+        if index is not None:
+            await run_menu_command(update, context, add, [str(index + 1), *text.split()])
+        await render_menu(update, context, "rules", url=state["url"])
+
+
+async def clear_menu_input(update, context):
+    state = context.user_data.get("rss_menu", {})
+    if state.get("chat_id") == update.effective_chat.id and state.get("pending"):
+        context.user_data.pop("rss_menu", None)
+
+
+async def register_commands(application):
+    await application.bot.set_my_commands([
+        BotCommand("menu", "打开按钮菜单"), BotCommand("start", "开始使用"),
+        BotCommand("help", "使用说明"), BotCommand("list_rss", "查看订阅源"),
+        BotCommand("cancel", "取消当前输入"),
+    ])
 
 # 主函数
 def main():
@@ -651,8 +887,15 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
 
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).connect_timeout(20).build()
+    application.post_init = register_commands
+    application.add_handler(TypeHandler(Update, enforce_admin), group=-2)
+    application.add_handler(MessageHandler(filters.COMMAND, clear_menu_input), group=-1)
 
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("menu", start))
+    application.add_handler(CommandHandler("cancel", start))
+    application.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^ui:"))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, menu_text))
     application.add_handler(CommandHandler("add_rss", add_rss))
     application.add_handler(CommandHandler("list_rss", list_rss))
     application.add_handler(CommandHandler("list", list_source))

@@ -96,6 +96,10 @@ class DeploymentTests(unittest.TestCase):
                 bot.main()
             builder.token.assert_called_once_with("123456:example")
             app = builder.build.return_value
+            self.assertIs(app.post_init, bot.register_commands)
+            guard = next(call for call in app.add_handler.call_args_list if call.kwargs.get("group") == -2)
+            self.assertIsInstance(guard.args[0], bot.TypeHandler)
+            self.assertIs(guard.args[0].callback, bot.enforce_admin)
             app.job_queue.run_repeating.assert_called_once_with(
                 bot.check_new_posts, interval=600, first=0
             )
