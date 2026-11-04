@@ -1,15 +1,26 @@
-version: '3.8'
-
 services:
   telegram-rss-bot:
-    image: ecouus/telegram-rss-bot:latest
+    build:
+      context: .
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.11-slim}
+        REQUIREMENTS_FILE: ${REQUIREMENTS_FILE:-requirements.txt}
+    image: feed-push:local
     container_name: telegram-rss-bot
-    restart: always
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 2m
     volumes:
-      - ./telegram-rss-bot:/app/data  # 将本地目录挂载到容器
+      - ./data:/app/data
     environment:
-      - TELEGRAM_BOT_TOKEN=bot_token  # 机器人token，通过@BotFather 创建
-      - ROOT_ID=admin_id  # 管理员id，通过@userinfobot 获取
-      - WHITELIST_GROUP_ID=-123456  # 白名单群组id，默认-123456
-      - ENABLE_GROUP_VERIFY=false  # 白名单群组验证，默认关闭，参数为true/false
-      - UPDATE_INTERVAL=300  # 抓取间隔，默认300s
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?请在.env中填写Bot Token}
+      ROOT_ID: ${ROOT_ID:?请在.env中填写管理员ID}
+      WHITELIST_GROUP_ID: ${WHITELIST_GROUP_ID:--123456}
+      ENABLE_GROUP_VERIFY: ${ENABLE_GROUP_VERIFY:-false}
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL:-300}
+      DATA_DIR: /app/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

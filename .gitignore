@@ -1,0 +1,12 @@
+.env
+data/
+backups/
+requirements.lock.txt
+venv/
+.venv/
+__pycache__/
+*.pyc
+user_data.json
+allowed_users.json
+whitelist_status.json
+rss_cache3.txt
