@@ -481,7 +481,7 @@ class NodeSeekAuthorParser(HTMLParser):
         self.name = []
         if "author-name" not in (attrs.get("class") or "").split():
             return
-        match = re.fullmatch(r"(?:https://(?:www\.)?nodeseek\.com)?(/space/[0-9]+/?)",
+        match = re.fullmatch(r"(?:https://(?:www\.)?nodeseek\.com)?(/space/[0-9]+/?)(?:[?#][^\s]*)?",
                              attrs.get("href") or "")
         if match:
             self.candidate = "https://www.nodeseek.com" + match[1].rstrip("/")
@@ -506,30 +506,39 @@ def nodeseek_author_profile(entry):
         return None
     try:
         response = requests.get("https://www.nodeseek.com" + url.path,
-                                headers={"User-Agent": "Mozilla/5.0", "Accept": "text/html"},
+                                headers={
+                                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                                  "Chrome/131.0.0.0 Safari/537.36",
+                                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                    "Accept-Language": "zh-CN,zh;q=0.9",
+                                    "Referer": "https://www.nodeseek.com/",
+                                },
                                 timeout=3, allow_redirects=False)
-        response.raise_for_status()
         if response.status_code != 200:
+            print(f"NodeSeek author lookup: HTTP {response.status_code} for {url.path}")
             return None
-    except requests.RequestException:
+    except requests.RequestException as error:
         # 主页信息是可选补充；403、超时等情况不能阻止正常推送。
+        print(f"NodeSeek author lookup: {type(error).__name__} for {url.path}")
         return None
     parser = NodeSeekAuthorParser(author)
     parser.feed(response.content.decode("utf-8", errors="replace"))
+    if not parser.profile_url:
+        print(f"NodeSeek author lookup: matching profile link not found for {url.path}")
     return parser.profile_url
 
 
 def notification_footer(entry, source, profile_url=None):
-    footer = f"📱 {escape_markdown(source, version=2)}"
     if urlparse(entry.link).hostname not in {"nodeseek.com", "www.nodeseek.com"}:
-        return footer
+        return f"📱 {escape_markdown(source, version=2)}"
     author = " ".join(entry.get("author", "").split())
     if author:
         label = escape_markdown(author, version=2)
         if profile_url:
             label = f"[{label}]({escape_markdown(profile_url, version=2, entity_type='text_link')})"
-        footer += f"    👤 {label}"
-    return footer
+        return f"👤 {label}"
+    return ""
 
 
 # 检查 RSS 并推送新内容 - 改进版本
