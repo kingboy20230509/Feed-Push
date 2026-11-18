@@ -4,6 +4,8 @@ from telegram.ext import (Application, ApplicationHandlerStop, CallbackQueryHand
                           CommandHandler, MessageHandler, TypeHandler, filters)
 from telegram.helpers import escape_markdown
 from urllib.parse import urlparse
+from html.parser import HTMLParser
+import asyncio
 import re
 import feedparser
 import requests
@@ -462,11 +464,80 @@ async def rm_rss(update, context):
 
     await update.message.reply_text(f"RSS 源已删除：{removed_rss['url']}")
 
+class NodeSeekAuthorParser(HTMLParser):
+    """只接受页面中与 RSS 作者同名的作者主页链接。"""
+    def __init__(self, author):
+        super().__init__()
+        self.author = author
+        self.candidate = None
+        self.name = []
+        self.profile_url = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "a":
+            return
+        attrs = dict(attrs)
+        self.candidate = None
+        self.name = []
+        if "author-name" not in (attrs.get("class") or "").split():
+            return
+        match = re.fullmatch(r"(?:https://(?:www\.)?nodeseek\.com)?(/space/[0-9]+/?)",
+                             attrs.get("href") or "")
+        if match:
+            self.candidate = "https://www.nodeseek.com" + match[1].rstrip("/")
+
+    def handle_data(self, data):
+        if self.candidate:
+            self.name.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "a":
+            if self.candidate and " ".join("".join(self.name).split()) == self.author:
+                self.profile_url = self.profile_url or self.candidate
+            self.candidate = None
+
+
+def nodeseek_author_profile(entry):
+    author = " ".join(entry.get("author", "").split())
+    url = urlparse(entry.link)
+    if (not author or url.scheme != "https"
+            or url.hostname not in {"nodeseek.com", "www.nodeseek.com"}
+            or not re.fullmatch(r"/post-[0-9]+-[0-9]+/?", url.path)):
+        return None
+    try:
+        response = requests.get("https://www.nodeseek.com" + url.path,
+                                headers={"User-Agent": "Mozilla/5.0", "Accept": "text/html"},
+                                timeout=3, allow_redirects=False)
+        response.raise_for_status()
+        if response.status_code != 200:
+            return None
+    except requests.RequestException:
+        # 主页信息是可选补充；403、超时等情况不能阻止正常推送。
+        return None
+    parser = NodeSeekAuthorParser(author)
+    parser.feed(response.content.decode("utf-8", errors="replace"))
+    return parser.profile_url
+
+
+def notification_footer(entry, source, profile_url=None):
+    footer = f"📱 {escape_markdown(source, version=2)}"
+    if urlparse(entry.link).hostname not in {"nodeseek.com", "www.nodeseek.com"}:
+        return footer
+    author = " ".join(entry.get("author", "").split())
+    if author:
+        label = escape_markdown(author, version=2)
+        if profile_url:
+            label = f"[{label}]({escape_markdown(profile_url, version=2, entity_type='text_link')})"
+        footer += f"    👤 {label}"
+    return footer
+
+
 # 检查 RSS 并推送新内容 - 改进版本
 async def check_new_posts(context):
     print("Fetching RSS data...")
     cached_guids = load_cache()
     user_data = load_user_data()
+    author_profiles = {}
 
     # 定义请求头
     headers = {
@@ -540,11 +611,15 @@ async def check_new_posts(context):
                         # 使用不区分大小写的标志，但保留原始文本
                         if re.search(pattern, combined_text, re.IGNORECASE | re.DOTALL):
                             print(f"Match found for pattern: {pattern}")
+                            author = " ".join(entry.get("author", "").split())
+                            if (author and urlparse(entry.link).hostname in {"nodeseek.com", "www.nodeseek.com"}
+                                    and author not in author_profiles):
+                                author_profiles[author] = await asyncio.to_thread(nodeseek_author_profile, entry)
                             message = (
                                 f"🔔 *{escaped_title}* 🔔\n\n"
                                 f"📌 {preview}\n\n"
                                 f"🔗 {link}\n"
-                                f"📱 {escape_markdown(source, version=2)}"
+                                f"{notification_footer(entry, source, author_profiles.get(author))}"
                             )
                             
                             await context.bot.send_message(
