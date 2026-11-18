@@ -484,7 +484,7 @@ class NodeSeekAuthorParser(HTMLParser):
         match = re.fullmatch(r"(?:https://(?:www\.)?nodeseek\.com)?(/space/[0-9]+/?)(?:[?#][^\s]*)?",
                              attrs.get("href") or "")
         if match:
-            self.candidate = "https://www.nodeseek.com" + match[1].rstrip("/")
+            self.candidate = "https://www.nodeseek.com" + match[1].rstrip("/") + "#/discussions"
 
     def handle_data(self, data):
         if self.candidate:

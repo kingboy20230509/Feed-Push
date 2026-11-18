@@ -36,11 +36,11 @@ class AuthorFooterTests(unittest.TestCase):
             <a class="author-name" href="https://[invalid">A_[测试] &amp; B</a>
             <a class="other author-name" href="/space/42"><span>A_[测试]</span> &amp; B</a>
             <a class="author-name" href="/space/99">其他回复者</a>''')
-        self.assertEqual(parser.profile_url, "https://www.nodeseek.com/space/42")
+        self.assertEqual(parser.profile_url, "https://www.nodeseek.com/space/42#/discussions")
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1",
                                           author="A_[测试] & B")
         self.assertEqual(self.bot.notification_footer(entry, "nodeseek", parser.profile_url),
-                         r"👤 [A\_\[测试\] & B](https://www.nodeseek.com/space/42)")
+                         r"👤 [A\_\[测试\] & B](https://www.nodeseek.com/space/42#/discussions)")
 
     def test_lookup_failures_are_optional_and_unrelated_links_are_not_fetched(self):
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
@@ -60,10 +60,11 @@ class AuthorFooterTests(unittest.TestCase):
             get.assert_not_called()
 
     def test_profile_tabs_and_query_strings_keep_the_author_profile(self):
-        for href in ("/space/42#/general", "https://www.nodeseek.com/space/42/?from=post"):
+        for href in ("/space/42", "/space/42#/general", "/space/42#/discussions",
+                     "https://www.nodeseek.com/space/42/?from=post"):
             parser = self.bot.NodeSeekAuthorParser("A")
             parser.feed(f'<a class="author-name" href="{href}">A</a>')
-            self.assertEqual(parser.profile_url, "https://www.nodeseek.com/space/42")
+            self.assertEqual(parser.profile_url, "https://www.nodeseek.com/space/42#/discussions")
 
     def test_http_failure_is_reported_without_blocking_push(self):
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
@@ -95,7 +96,7 @@ class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
                     await bot.check_new_posts(context)
                 context.bot.send_message.assert_awaited_once()
                 text = context.bot.send_message.call_args.kwargs["text"]
-                label = "A" if blocked else "[A](https://www.nodeseek.com/space/42)"
+                label = "A" if blocked else "[A](https://www.nodeseek.com/space/42#/discussions)"
                 self.assertTrue(text.endswith("👤 " + label))
                 self.assertNotIn("📱 nodeseek", text)
                 self.assertEqual(bot.load_cache(), {"1"})
