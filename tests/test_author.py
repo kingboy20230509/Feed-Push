@@ -20,12 +20,13 @@ class AuthorFooterTests(unittest.TestCase):
             <dc:creator>A_[测试] &amp; B</dc:creator>
             </item></channel></rss>''')
         self.assertEqual(self.bot.notification_footer(feed.entries[0], "nodeseek"),
-                         r"📱 nodeseek    👤 A\_\[测试\] & B")
+                         r"👤 A\_\[测试\] & B")
 
-    def test_missing_author_and_other_feeds_keep_original_footer(self):
-        for entry in (feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1"),
-                      feedparser.FeedParserDict(link="https://example.com/post", author="A")):
-            self.assertEqual(self.bot.notification_footer(entry, "source"), "📱 source")
+    def test_nodeseek_source_is_hidden_and_other_feeds_keep_original_footer(self):
+        entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1")
+        self.assertEqual(self.bot.notification_footer(entry, "nodeseek"), "")
+        entry = feedparser.FeedParserDict(link="https://example.com/post", author="A")
+        self.assertEqual(self.bot.notification_footer(entry, "source"), "📱 source")
 
     def test_only_matching_author_links_on_nodeseek_are_accepted(self):
         parser = self.bot.NodeSeekAuthorParser("A_[测试] & B")
@@ -39,7 +40,7 @@ class AuthorFooterTests(unittest.TestCase):
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1",
                                           author="A_[测试] & B")
         self.assertEqual(self.bot.notification_footer(entry, "nodeseek", parser.profile_url),
-                         r"📱 nodeseek    👤 [A\_\[测试\] & B](https://www.nodeseek.com/space/42)")
+                         r"👤 [A\_\[测试\] & B](https://www.nodeseek.com/space/42)")
 
     def test_lookup_failures_are_optional_and_unrelated_links_are_not_fetched(self):
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
@@ -57,6 +58,19 @@ class AuthorFooterTests(unittest.TestCase):
                 entry.link = link
                 self.assertIsNone(self.bot.nodeseek_author_profile(entry))
             get.assert_not_called()
+
+    def test_profile_tabs_and_query_strings_keep_the_author_profile(self):
+        for href in ("/space/42#/general", "https://www.nodeseek.com/space/42/?from=post"):
+            parser = self.bot.NodeSeekAuthorParser("A")
+            parser.feed(f'<a class="author-name" href="{href}">A</a>')
+            self.assertEqual(parser.profile_url, "https://www.nodeseek.com/space/42")
+
+    def test_http_failure_is_reported_without_blocking_push(self):
+        entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
+        with patch.object(self.bot.requests, "get", return_value=Mock(status_code=403)), \
+                patch("builtins.print") as log:
+            self.assertIsNone(self.bot.nodeseek_author_profile(entry))
+        log.assert_called_once_with("NodeSeek author lookup: HTTP 403 for /post-1-1")
 
 
 class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
@@ -82,7 +96,8 @@ class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
                 context.bot.send_message.assert_awaited_once()
                 text = context.bot.send_message.call_args.kwargs["text"]
                 label = "A" if blocked else "[A](https://www.nodeseek.com/space/42)"
-                self.assertTrue(text.endswith("📱 nodeseek    👤 " + label))
+                self.assertTrue(text.endswith("👤 " + label))
+                self.assertNotIn("📱 nodeseek", text)
                 self.assertEqual(bot.load_cache(), {"1"})
                 self.assertEqual(get.call_count, 3)
                 self.assertEqual(get.call_args_list[1].kwargs["timeout"], 3)

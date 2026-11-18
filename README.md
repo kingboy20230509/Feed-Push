@@ -74,12 +74,13 @@ bash bot-instance.sh up bot2
 
 ### NodeSeek 推送作者
 
-NodeSeek 通知底部显示为 `📱 nodeseek    👤 作者名称`。
+NodeSeek 通知底部只显示 `👤 作者名称`，不再显示 `📱 nodeseek`。
 RSS 的 `dc:creator` 提供作者名称；命中关键词后才额外读取帖子页面，
 获取到同名作者的主页地址时，作者名称可点击进入主页。
 若帖子页面返回 403、超时或无法识别主页链接，则保留作者文字并正常推送。
+主页链接支持带 `#/general` 等页面片段的地址；查询失败时，容器日志中的
+`NodeSeek author lookup:` 会记录 HTTP 状态、请求异常类型或未找到同名作者链接。
 同一轮检查中，同名作者只查询一次；订阅、关键词和历史推送缓存无需修改。
-Telegram 会按客户端宽度自动换行，无法固定将作者贴在屏幕最右侧。
 
 **输入/help获取指令帮助！**  
 - **TELEGRAM_BOT_TOKEN**: 在 Telegram 上通过 @BotFather 创建 Bot 时获得的 Token，用于与 Telegram API 进行交互。
