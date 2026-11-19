@@ -32,10 +32,12 @@ class DeploymentTests(unittest.TestCase):
             bots[0].save_allowed_users({123})
             bots[0].save_whitelist_status(True)
             bots[0].save_cache({"first-bot-entry"})
+            bots[0].save_deliveries({"first-bot-entry": {"status": "failed"}})
             self.assertEqual(bots[1].load_user_data(), {})
             self.assertEqual(bots[1].load_allowed_users(), set())
             self.assertFalse(bots[1].load_whitelist_status())
             self.assertEqual(bots[1].load_cache(), set())
+            self.assertEqual(bots[1].load_deliveries(), {})
             self.assertNotEqual(bots[0].TELEGRAM_BOT_TOKEN, bots[1].TELEGRAM_BOT_TOKEN)
 
     def test_instance_setup_preserves_config_and_routes_compose_projects(self):
@@ -101,7 +103,8 @@ class DeploymentTests(unittest.TestCase):
             self.assertIsInstance(guard.args[0], bot.TypeHandler)
             self.assertIs(guard.args[0].callback, bot.enforce_admin)
             app.job_queue.run_repeating.assert_called_once_with(
-                bot.check_new_posts, interval=600, first=0
+                bot.check_new_posts, interval=600, first=0,
+                job_kwargs={"max_instances": 1, "coalesce": True}
             )
             app.run_polling.assert_called_once_with()
             self.assertTrue(data_dir.is_dir())

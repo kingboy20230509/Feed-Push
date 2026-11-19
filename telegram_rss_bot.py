@@ -1,5 +1,5 @@
 from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.error import BadRequest
+from telegram.error import BadRequest, NetworkError, RetryAfter, TelegramError
 from telegram.ext import (Application, ApplicationHandlerStop, CallbackQueryHandler,
                           CommandHandler, MessageHandler, TypeHandler, filters)
 from telegram.helpers import escape_markdown
@@ -14,11 +14,14 @@ import json
 import re
 import secrets
 import time
+import tempfile
 from types import SimpleNamespace
 
 # 配置
 DATA_DIR = os.getenv("DATA_DIR", ".")  # 本机部署默认仍使用当前目录
 CACHE_FILE = os.path.join(DATA_DIR, "rss_cache3.txt")  # 本地缓存文件
+DELIVERY_FILE = os.path.join(DATA_DIR, "delivery_queue.json")
+RETRY_DELAYS = (120, 600, 1800)  # 首次发送失败后，最多再重试三次
 USER_DATA_FILE = os.path.join(DATA_DIR, "user_data.json")  # 存储用户规则和 RSS 源
 ALLOWED_USERS_FILE = os.path.join(DATA_DIR, "allowed_users.json")  # 存储白名单的文件
 WHITELIST_STATUS_FILE = os.path.join(DATA_DIR, "whitelist_status.json")  # 白名单模式状态文件
@@ -546,6 +549,8 @@ async def check_new_posts(context):
     print("Fetching RSS data...")
     cached_guids = load_cache()
     user_data = load_user_data()
+    deliveries = load_deliveries()
+    await retry_deliveries(context, deliveries, cached_guids, user_data)
     author_profiles = {}
 
     # 定义请求头
@@ -581,7 +586,7 @@ async def check_new_posts(context):
             for entry in feed.entries:
                 guid = entry.id if "id" in entry else entry.link
 
-                if guid in cached_guids:
+                if guid in cached_guids or guid in deliveries:
                     continue
                     
                 # 获取标题和预览文本 - 现在不转换为小写
@@ -631,15 +636,11 @@ async def check_new_posts(context):
                                 f"{notification_footer(entry, source, author_profiles.get(author))}"
                             )
                             
-                            await context.bot.send_message(
-                                chat_id=chat_id,
-                                text=message,
-                                parse_mode="MarkdownV2",
-                                disable_web_page_preview=True  # 禁用链接预览
-                            )
-                            print(f"Message sent to {chat_id}: {raw_title}")
-                            cached_guids.add(guid)
-                            save_cache(cached_guids)
+                            delivery = {"chat_id": chat_id, "rss_url": rss_url,
+                                        "title": raw_title, "text": message,
+                                        "attempts": 0, "status": "waiting", "next_attempt_at": 0}
+                            deliveries[guid] = delivery
+                            await deliver_post(context, guid, delivery, deliveries, cached_guids)
                             break
                         else:
                             print(f"No match for pattern: {pattern}")
@@ -652,10 +653,92 @@ def load_cache():
             return set(line.strip() for line in f)
     return set()
 
+def atomic_write(path, content):
+    fd, temporary = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(path)))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
 def save_cache(cache):
-    with open(CACHE_FILE, "w") as f:
-        for guid in cache:
-            f.write(f"{guid}\n")
+    atomic_write(CACHE_FILE, "".join(f"{guid}\n" for guid in cache))
+
+
+def load_deliveries():
+    if not os.path.exists(DELIVERY_FILE):
+        return {}
+    # 损坏时让检查失败，不能清空队列后把同一帖子当成新消息再发送。
+    with open(DELIVERY_FILE, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_deliveries(deliveries):
+    atomic_write(DELIVERY_FILE, json.dumps(deliveries, ensure_ascii=False, indent=2) + "\n")
+
+
+async def deliver_post(context, guid, delivery, deliveries, cached_guids):
+    delivery["attempts"] += 1
+    attempt = delivery["attempts"]
+    delay = RETRY_DELAYS[attempt - 1] if attempt <= len(RETRY_DELAYS) else None
+    # 先落盘次数和下次时间，进程中断或重启也不能重置重试预算。
+    delivery.update(status="waiting" if delay is not None else "failed",
+                    next_attempt_at=time.time() + 30 + delay if delay is not None else None)
+    save_deliveries(deliveries)
+    try:
+        result = await context.bot.send_message(
+            chat_id=delivery["chat_id"], text=delivery["text"], parse_mode="MarkdownV2",
+            disable_web_page_preview=True, read_timeout=30, write_timeout=20)
+    except TelegramError as error:
+        # BadRequest 也是 NetworkError 的子类，但消息格式错误不应重复尝试。
+        retryable = isinstance(error, (NetworkError, RetryAfter)) and not isinstance(error, BadRequest)
+        if not retryable or delay is None:
+            delivery.update(status="failed", next_attempt_at=None)
+        else:
+            if isinstance(error, RetryAfter):
+                minimum = error.retry_after
+                minimum = minimum.total_seconds() if hasattr(minimum, "total_seconds") else minimum
+                delay = max(delay, minimum)
+            delivery["next_attempt_at"] = time.time() + delay
+        delivery["last_error"] = type(error).__name__
+        save_deliveries(deliveries)
+        print(f"Delivery {guid}: attempt={attempt}, status={delivery['status']}, "
+              f"error={type(error).__name__}, next={delivery['next_attempt_at']}")
+        return
+
+    # 先保存成功状态；即使随后缓存写入失败，下一轮也只补写缓存而不重发。
+    delivery.update(status="sent", next_attempt_at=None, message_id=result.message_id)
+    save_deliveries(deliveries)
+    cached_guids.add(guid)
+    save_cache(cached_guids)
+    del deliveries[guid]
+    save_deliveries(deliveries)
+    print(f"Message sent to {delivery['chat_id']}: {delivery['title']}")
+    print(f"Delivery {guid}: sent, attempt={attempt}, message_id={result.message_id}")
+
+
+async def retry_deliveries(context, deliveries, cached_guids, user_data):
+    sources = {rss["url"] for rss in user_data.get(str(ROOT_ID), {}).get("rss_sources", [])}
+    for guid, delivery in list(deliveries.items()):
+        if delivery["status"] == "sent":
+            cached_guids.add(guid)
+            save_cache(cached_guids)
+        if guid in cached_guids:
+            del deliveries[guid]
+            save_deliveries(deliveries)
+            continue
+        if str(delivery["chat_id"]) != str(ROOT_ID) or delivery["rss_url"] not in sources:
+            if delivery["status"] == "waiting":
+                delivery.update(status="cancelled", next_attempt_at=None)
+                save_deliveries(deliveries)
+            continue
+        if delivery["status"] == "waiting" and delivery["next_attempt_at"] <= time.time():
+            await deliver_post(context, guid, delivery, deliveries, cached_guids)
 
 # 添加用户到白名单
 async def add_user(update, context):
@@ -991,7 +1074,8 @@ def main():
     application.add_handler(CommandHandler("group_verify", toggle_group_verify))  # 添加新的命令处理器
     application.add_handler(CommandHandler("help", help_command))
 
-    application.job_queue.run_repeating(check_new_posts, interval=UPDATE_INTERVAL, first=0)
+    application.job_queue.run_repeating(check_new_posts, interval=UPDATE_INTERVAL, first=0,
+                                       job_kwargs={"max_instances": 1, "coalesce": True})
 
     application.run_polling()
 

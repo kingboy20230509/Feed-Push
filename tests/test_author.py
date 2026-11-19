@@ -89,7 +89,8 @@ class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
                     <link>https://www.nodeseek.com/post-2-1</link><dc:creator>B</dc:creator></item>
                     </channel></rss>''')
                 page = Mock(status_code=200, content=b'<a href="/space/42" class="author-name">A</a>')
-                context = SimpleNamespace(bot=SimpleNamespace(send_message=AsyncMock()))
+                context = SimpleNamespace(bot=SimpleNamespace(
+                    send_message=AsyncMock(return_value=SimpleNamespace(message_id=1))))
                 result = requests.HTTPError("403") if blocked else page
                 with patch.object(bot.requests, "get", side_effect=[rss, result, rss]) as get:
                     await bot.check_new_posts(context)
