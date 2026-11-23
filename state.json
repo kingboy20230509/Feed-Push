@@ -1,26 +1,19 @@
 {
   "stock": {
-    "eu:24ska01": [],
-    "eu:24sk40": [],
-    "eu:27skle03-v1": [
-      "[\"27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa\",\"ram-64g-ddr4-ecc-2666\",\"softraid-3x4000sa\",\"fra\"]",
-      "[\"27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa\",\"ram-64g-ddr4-ecc-2666\",\"softraid-3x4000sa\",\"gra\"]"
-    ]
+    "eu:24ska012-sgp": [],
+    "eu:24sk40-v1": [
+      "[\"24sk40-v1.ram-32g-ecc-2133.softraid-2x450nvme\",\"ram-32g-ecc-2133\",\"softraid-2x450nvme\",\"gra\"]"
+    ],
+    "eu:27skle01-v1": [],
+    "eu:27skle03-v1": []
   },
   "items": [
     {
-      "guid": "urn:uuid:5e989733-0eb2-4ee9-9c2f-30b38cad1232",
-      "title": "OVH 补货 · KS-LE-3 · FRA · 1H-low",
-      "description": "API 区域 EU｜套餐 27skle03-v1｜机房 FRA｜库存 1H-low｜内存 ram-64g-ddr4-ecc-2666｜硬盘 softraid-3x4000sa｜配置 27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa",
+      "guid": "urn:uuid:a2f67da4-101e-4890-92c9-a78e42362f42",
+      "title": "OVH 补货 · KS-4 · GRA · 1H-low",
+      "description": "API 区域 EU｜套餐 24sk40-v1｜机房 GRA｜库存 1H-low｜内存 ram-32g-ecc-2133｜硬盘 softraid-2x450nvme｜配置 24sk40-v1.ram-32g-ecc-2133.softraid-2x450nvme",
       "link": "https://eco.ovhcloud.com/en-ie/",
-      "pubDate": "Mon, 23 Nov 2026 10:41:45 GMT"
-    },
-    {
-      "guid": "urn:uuid:41f7e99e-a7fe-468c-b541-5d2d5a1add86",
-      "title": "OVH 补货 · KS-LE-3 · GRA · 1H-low",
-      "description": "API 区域 EU｜套餐 27skle03-v1｜机房 GRA｜库存 1H-low｜内存 ram-64g-ddr4-ecc-2666｜硬盘 softraid-3x4000sa｜配置 27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa",
-      "link": "https://eco.ovhcloud.com/en-ie/",
-      "pubDate": "Mon, 23 Nov 2026 10:41:45 GMT"
+      "pubDate": "Mon, 23 Nov 2026 10:47:49 GMT"
     }
   ]
 }
