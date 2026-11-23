@@ -3,7 +3,7 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      OVH_WATCH: ${OVH_WATCH:-eu:24ska01,eu:24sk40,eu:27skle03-v1}
+      OVH_WATCH: ${OVH_WATCH:-}
       OVH_DATACENTERS: ${OVH_DATACENTERS:-}
       POLL_SECONDS: ${POLL_SECONDS:-60}
     volumes:
