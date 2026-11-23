@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import re
 import signal
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -11,6 +12,26 @@ from urllib.parse import urlsplit
 from xml.etree import ElementTree as ET
 
 from stock import DEFAULT_WATCH, MARKETS, load_state, poll, watch_list, write_atomic
+
+PRODUCT_PAGES = {
+    "eu:24ska012-sgp": "https://eco.ovhcloud.com/en-ie/kimsufi/ks-a/",
+    "eu:24sk40-v1": "https://eco.ovhcloud.com/en-ie/kimsufi/ks-4/",
+    "eu:27skle01-v1": "https://eco.ovhcloud.com/en-ie/kimsufi/ks-le-1/",
+    "eu:27skle03-v1": "https://eco.ovhcloud.com/en-ie/kimsufi/ks-le-3/",
+    "us:24sk40-v1-us": "https://eco.us.ovhcloud.com/kimsufi/ks-4/",
+    "us:24sk50-v1-us": "https://eco.us.ovhcloud.com/kimsufi/ks-5/",
+    "us:26sk50b-v1-us": "https://eco.us.ovhcloud.com/kimsufi/ks-5-b/",
+}
+
+
+def item_link(entry):
+    watch = entry.get("watch")
+    if watch is None:
+        legacy = re.match(r"API 区域 ([A-Z]+)｜套餐 ([\w-]+)｜", entry["description"])
+        if legacy:
+            market, plan = legacy.groups()
+            watch = f"{market.lower()}:{plan}"
+    return PRODUCT_PAGES.get(watch, entry["link"])
 
 
 def rss_xml(items):
@@ -22,8 +43,13 @@ def rss_xml(items):
     ET.SubElement(channel, "language").text = "zh-CN"
     for entry in items:
         item = ET.SubElement(channel, "item")
-        for tag in ("title", "link", "description", "pubDate"):
-            ET.SubElement(item, tag).text = entry[tag]
+        for tag, value in (
+            ("title", entry["title"]),
+            ("link", item_link(entry)),
+            ("description", entry["description"]),
+            ("pubDate", entry["pubDate"]),
+        ):
+            ET.SubElement(item, tag).text = value
         ET.SubElement(item, "guid", isPermaLink="false").text = entry["guid"]
     ET.indent(root)
     return ET.tostring(root, encoding="utf-8", xml_declaration=True) + b"\n"

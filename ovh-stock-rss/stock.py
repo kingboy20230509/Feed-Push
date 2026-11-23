@@ -165,6 +165,7 @@ def poll(path, watches, datacenters, fetch=query_availability, catalog=find_cata
             name = (record.get("invoiceName") or plan.upper()).partition(" | ")[0]
             events.append({
                 "guid": f"urn:uuid:{uuid4()}",
+                "watch": watch,
                 "title": f"OVH 补货 · {name} · {dc.upper()} · {status}",
                 "description": (
                     f"API 区域 {market.upper()}｜套餐 {plan}｜机房 {dc.upper()}｜库存 {status}"
