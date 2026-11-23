@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss version="2.0">
+  <channel>
+    <title>OVH 独立服务器补货</title>
+    <link>https://eco.ovhcloud.com/en-ie/</link>
+    <description>OVH 公开库存接口报告的套餐、配置和机房补货事件</description>
+    <language>zh-CN</language>
+    <item>
+      <title>OVH 补货 · KS-LE-3 · FRA · 1H-low</title>
+      <link>https://eco.ovhcloud.com/en-ie/</link>
+      <description>API 区域 EU｜套餐 27skle03-v1｜机房 FRA｜库存 1H-low｜内存 ram-64g-ddr4-ecc-2666｜硬盘 softraid-3x4000sa｜配置 27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa</description>
+      <pubDate>Mon, 23 Nov 2026 10:41:45 GMT</pubDate>
+      <guid isPermaLink="false">urn:uuid:5e989733-0eb2-4ee9-9c2f-30b38cad1232</guid>
+    </item>
+    <item>
+      <title>OVH 补货 · KS-LE-3 · GRA · 1H-low</title>
+      <link>https://eco.ovhcloud.com/en-ie/</link>
+      <description>API 区域 EU｜套餐 27skle03-v1｜机房 GRA｜库存 1H-low｜内存 ram-64g-ddr4-ecc-2666｜硬盘 softraid-3x4000sa｜配置 27skle03-v1.ram-64g-ddr4-ecc-2666.softraid-3x4000sa</description>
+      <pubDate>Mon, 23 Nov 2026 10:41:45 GMT</pubDate>
+      <guid isPermaLink="false">urn:uuid:41f7e99e-a7fe-468c-b541-5d2d5a1add86</guid>
+    </item>
+  </channel>
+</rss>

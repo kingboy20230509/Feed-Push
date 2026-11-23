@@ -1,3 +1,0 @@
-python-telegram-bot[ext,job-queue]
-feedparser
-requests
