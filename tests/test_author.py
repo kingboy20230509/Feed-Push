@@ -11,7 +11,8 @@ from test_deployment import load_bot
 
 class AuthorFooterTests(unittest.TestCase):
     def setUp(self):
-        self.bot = load_bot({})
+        directory = self.enterContext(tempfile.TemporaryDirectory())
+        self.bot = load_bot({"DATA_DIR": directory})
 
     def test_dc_creator_is_displayed_and_markdown_escaped(self):
         feed = feedparser.parse('''<rss version="2.0"
@@ -48,11 +49,14 @@ class AuthorFooterTests(unittest.TestCase):
             for error in (requests.HTTPError("403"), requests.Timeout("timeout")):
                 get.side_effect = error
                 self.assertIsNone(self.bot.nodeseek_author_profile(entry))
+                self.bot.save_author_cache({"next_lookup_at": 0, "profiles": {}})
             get.side_effect = None
-            get.return_value = Mock(status_code=302)
+            get.return_value = Mock(status_code=302, headers={})
             self.assertIsNone(self.bot.nodeseek_author_profile(entry))
-            get.return_value = Mock(status_code=200, content=b'<html>challenge</html>')
+            self.bot.save_author_cache({"next_lookup_at": 0, "profiles": {}})
+            get.return_value = Mock(status_code=200, headers={}, content=b'<html>challenge</html>')
             self.assertIsNone(self.bot.nodeseek_author_profile(entry))
+            self.bot.save_author_cache({"next_lookup_at": 0, "profiles": {}})
             get.reset_mock()
             for link in ("https://evil.example/post-1-1", "https://www.nodeseek.com/login"):
                 entry.link = link
@@ -68,10 +72,39 @@ class AuthorFooterTests(unittest.TestCase):
 
     def test_http_failure_is_reported_without_blocking_push(self):
         entry = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
-        with patch.object(self.bot.requests, "get", return_value=Mock(status_code=403)), \
+        with patch.object(self.bot.requests, "get", return_value=Mock(status_code=403, headers={})), \
                 patch("builtins.print") as log:
             self.assertIsNone(self.bot.nodeseek_author_profile(entry))
-        log.assert_called_once_with("NodeSeek author lookup: HTTP 403 for /post-1-1")
+        log.assert_called_once_with("NodeSeek author lookup: HTTP 403 for /post-1-1, paused for 3600s")
+
+    def test_persistent_author_cache_reuses_profiles_and_cools_down_on_challenge(self):
+        first = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-1-1", author="A")
+        later = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-2-1", author="A")
+        unknown = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-3-1", author="B")
+        uncached = feedparser.FeedParserDict(link="https://www.nodeseek.com/post-4-1", author="C")
+        profile = "https://www.nodeseek.com/space/42#/discussions"
+        good = Mock(status_code=200, headers={}, content=b'<a class="author-name" href="/space/42">A</a>')
+        recovered = Mock(status_code=200, headers={}, content=b'<a class="author-name" href="/space/43">C</a>')
+        challenge = Mock(status_code=403, headers={"cf-mitigated": "challenge"})
+        with patch.object(self.bot.time, "time", return_value=1000) as clock, \
+                patch.object(self.bot.requests, "get", side_effect=[good, challenge, recovered]) as get:
+            self.assertEqual(self.bot.nodeseek_author_profile(first), profile)
+            restarted = load_bot({"DATA_DIR": self.bot.DATA_DIR})
+            self.assertEqual(restarted.nodeseek_author_profile(later), profile)
+            self.assertIsNone(restarted.nodeseek_author_profile(unknown))
+            self.assertEqual(get.call_count, 1)
+
+            clock.return_value += 120
+            self.assertIsNone(restarted.nodeseek_author_profile(unknown))
+            clock.return_value += 3599
+            self.assertIsNone(restarted.nodeseek_author_profile(uncached))
+            self.assertEqual(restarted.nodeseek_author_profile(later), profile)
+            self.assertEqual(get.call_count, 2)
+
+            clock.return_value += 1
+            self.assertEqual(restarted.nodeseek_author_profile(uncached),
+                             "https://www.nodeseek.com/space/43#/discussions")
+            self.assertEqual(get.call_count, 3)
 
 
 class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
@@ -88,7 +121,7 @@ class AuthorNotificationTests(unittest.IsolatedAsyncioTestCase):
                     <item><guid>2</guid><title>unmatched</title>
                     <link>https://www.nodeseek.com/post-2-1</link><dc:creator>B</dc:creator></item>
                     </channel></rss>''')
-                page = Mock(status_code=200, content=b'<a href="/space/42" class="author-name">A</a>')
+                page = Mock(status_code=200, headers={}, content=b'<a href="/space/42" class="author-name">A</a>')
                 context = SimpleNamespace(bot=SimpleNamespace(
                     send_message=AsyncMock(return_value=SimpleNamespace(message_id=1))))
                 result = requests.HTTPError("403") if blocked else page

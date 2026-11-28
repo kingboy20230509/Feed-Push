@@ -5,6 +5,7 @@ from telegram.ext import (Application, ApplicationHandlerStop, CallbackQueryHand
 from telegram.helpers import escape_markdown
 from urllib.parse import urlparse
 from html.parser import HTMLParser
+from email.utils import parsedate_to_datetime
 import asyncio
 import re
 import feedparser
@@ -21,6 +22,11 @@ from types import SimpleNamespace
 DATA_DIR = os.getenv("DATA_DIR", ".")  # 本机部署默认仍使用当前目录
 CACHE_FILE = os.path.join(DATA_DIR, "rss_cache3.txt")  # 本地缓存文件
 DELIVERY_FILE = os.path.join(DATA_DIR, "delivery_queue.json")
+AUTHOR_CACHE_FILE = os.path.join(DATA_DIR, "nodeseek_author_cache.json")
+AUTHOR_LOOKUP_INTERVAL = 120
+AUTHOR_BLOCK_COOLDOWN = 3600
+AUTHOR_MISS_TTL = 1800
+AUTHOR_PROFILE_TTL = 30 * 86400
 RETRY_DELAYS = (120, 600, 1800)  # 首次发送失败后，最多再重试三次
 USER_DATA_FILE = os.path.join(DATA_DIR, "user_data.json")  # 存储用户规则和 RSS 源
 ALLOWED_USERS_FILE = os.path.join(DATA_DIR, "allowed_users.json")  # 存储白名单的文件
@@ -507,8 +513,50 @@ def nodeseek_author_profile(entry):
             or url.hostname not in {"nodeseek.com", "www.nodeseek.com"}
             or not re.fullmatch(r"/post-[0-9]+-[0-9]+/?", url.path)):
         return None
+    now = time.time()
     try:
-        response = requests.get("https://www.nodeseek.com" + url.path,
+        try:
+            with open(AUTHOR_CACHE_FILE, encoding="utf-8") as f:
+                state = json.load(f)
+        except FileNotFoundError:
+            state = {"next_lookup_at": 0, "profiles": {}}
+        profiles = state["profiles"]
+        cached = profiles.get(author)
+        if cached is not None and cached["expires_at"] > now:
+            profile = cached["url"]
+            if profile is None or re.fullmatch(r"https://www\.nodeseek\.com/space/[0-9]+#/discussions", profile):
+                return profile
+        if now < state["next_lookup_at"]:
+            return None
+
+        state["profiles"] = {name: record for name, record in profiles.items()
+                             if record["expires_at"] > now}
+        # 先保存下次查询时间，重启也不会立刻再请求一次。
+        state["next_lookup_at"] = now + AUTHOR_LOOKUP_INTERVAL
+        save_author_cache(state)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        print(f"NodeSeek author cache: {type(error).__name__}")
+        return None
+
+    profile, cooldown = fetch_nodeseek_author_profile(author, url.path)
+    now = time.time()
+    ttl = AUTHOR_PROFILE_TTL if profile else AUTHOR_MISS_TTL
+    state["profiles"][author] = {"url": profile, "expires_at": now + ttl}
+    state["next_lookup_at"] = now + cooldown
+    try:
+        save_author_cache(state)
+    except OSError as error:
+        print(f"NodeSeek author cache: {type(error).__name__}")
+    return profile
+
+
+def save_author_cache(state):
+    atomic_write(AUTHOR_CACHE_FILE, json.dumps(state, ensure_ascii=False) + "\n")
+
+
+def fetch_nodeseek_author_profile(author, path):
+    try:
+        response = requests.get("https://www.nodeseek.com" + path,
                                 headers={
                                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                                                   "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -518,18 +566,30 @@ def nodeseek_author_profile(entry):
                                     "Referer": "https://www.nodeseek.com/",
                                 },
                                 timeout=3, allow_redirects=False)
-        if response.status_code != 200:
-            print(f"NodeSeek author lookup: HTTP {response.status_code} for {url.path}")
-            return None
     except requests.RequestException as error:
         # 主页信息是可选补充；403、超时等情况不能阻止正常推送。
-        print(f"NodeSeek author lookup: {type(error).__name__} for {url.path}")
-        return None
+        print(f"NodeSeek author lookup: {type(error).__name__} for {path}")
+        return None, AUTHOR_LOOKUP_INTERVAL
+    if response.status_code in (403, 429) or response.headers.get("cf-mitigated") == "challenge":
+        delay = AUTHOR_BLOCK_COOLDOWN
+        retry_after = response.headers.get("Retry-After")
+        if retry_after:
+            try:
+                seconds = (int(retry_after) if retry_after.isascii() and retry_after.isdecimal()
+                           else parsedate_to_datetime(retry_after).timestamp() - time.time())
+                delay = max(delay, seconds)
+            except (ValueError, OverflowError, OSError):
+                pass
+        print(f"NodeSeek author lookup: HTTP {response.status_code} for {path}, paused for {delay}s")
+        return None, delay
+    if response.status_code != 200:
+        print(f"NodeSeek author lookup: HTTP {response.status_code} for {path}")
+        return None, AUTHOR_LOOKUP_INTERVAL
     parser = NodeSeekAuthorParser(author)
     parser.feed(response.content.decode("utf-8", errors="replace"))
     if not parser.profile_url:
-        print(f"NodeSeek author lookup: matching profile link not found for {url.path}")
-    return parser.profile_url
+        print(f"NodeSeek author lookup: matching profile link not found for {path}")
+    return parser.profile_url, AUTHOR_LOOKUP_INTERVAL
 
 
 def notification_footer(entry, source, profile_url=None):
